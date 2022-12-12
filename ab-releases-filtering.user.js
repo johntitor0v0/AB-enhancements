@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/torrents.php*
 // @grant       none
-// @version     1.2
+// @version     1.3
 // @author      -
 // @description Filters out torrents based on desired options
 // @grant       GM_addStyle
@@ -76,7 +76,7 @@ const importantFields = [
   'translation',
 ];
 const manualFields = {
-  ongoing: ['Ongoing'],
+  completion: ['Ongoing'],
   fileFormat: ['EPUB', 'Archived_Scans'],
 };
 
@@ -162,6 +162,15 @@ const buttons = [];
         if (!torrentInfo[id].translation) {
           torrentInfo[id].translation = 'Translated';
           fieldOptions.translation.add('Translated');
+        }
+      }
+    }
+    // same for completion, add 'Completed'
+    if (fieldOptions.completion) {
+      for (const id of Object.keys(torrentInfo)) {
+        if (!torrentInfo[id].completion) {
+          torrentInfo[id].completion = 'Completed';
+          fieldOptions.completion.add('Completed');
         }
       }
     }
