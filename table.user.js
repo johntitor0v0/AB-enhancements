@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name        New script - animebytes.tv
+// @name        AB Torrent Releases Filtering
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/torrents.php
 // @grant       none
-// @version     1.0
+// @version     1.1
 // @author      -
-// @description 12/11/2022, 8:30:37 PM
+// @description Filters out torrents based on desired options
 // @grant       GM_addStyle
 // ==/UserScript==
 const addCSS = /* css */ `
@@ -34,7 +34,12 @@ const importantFields = [
   'audioCodec',
   'audioChannels',
   'hasJPSubs',
+  'translation',
 ];
+const manualFields = {
+  ongoing: ['Ongoing'],
+  fileFormat: ['EPUB', 'Archived_Scans'],
+};
 
 const optionsHTML = /* html */ `
 <div class="box">
@@ -46,14 +51,15 @@ const optionsHTML = /* html */ `
 </div>
 `;
 
+const torrentInfo = {};
+const fieldOptions = {};
+const checkboxes = [];
+
 (function () {
   setTimeout(() => {
     const torrentTable = document.querySelector('.torrent_table > tbody');
 
     const torrents = Array.from(torrentTable.querySelectorAll('tr.group_torrent'));
-
-    const torrentInfo = {};
-    const fieldOptions = {};
 
     // Loop through each torrent row and extract relevant info
     for (const torrent of torrents) {
@@ -81,22 +87,52 @@ const optionsHTML = /* html */ `
           // convert to string
           torrentInfo[id].hasJPSubs =
             subtitlesCaption.nextElementSibling.textContent.includes('Japanese') + '';
+          if (!fieldOptions.hasJPSubs) {
+            fieldOptions.hasJPSubs = new Set();
+          }
+          fieldOptions.hasJPSubs.add(torrentInfo[id].hasJPSubs);
+        }
+      }
+
+      // Add manual fields
+      for (const misc of titleAnchor.dataset['fields']?.split(' ') ?? []) {
+        for (const field of Object.keys(manualFields)) {
+          if (manualFields[field].includes(misc)) {
+            torrentInfo[id][field] = misc;
+            if (!fieldOptions[field]) {
+              fieldOptions[field] = new Set();
+            }
+            fieldOptions[field].add(misc);
+          }
         }
       }
     }
-    fieldOptions.hasJPSubs = new Set(['true', 'false']);
 
     console.log(`Found ${torrents.length} torrents`);
+    console.log(fieldOptions);
+    // remove undefined from each set
+    for (const field of importantFields) {
+      fieldOptions[field].delete(undefined);
+      if (fieldOptions[field].size === 0) {
+        delete fieldOptions[field];
+      }
+    }
+    // if there's a translation field, assign translated to all torrents without 'Raw' option
+    if (fieldOptions.translation) {
+      for (const id of Object.keys(torrentInfo)) {
+        if (!torrentInfo[id].translation) {
+          torrentInfo[id].translation = 'Translated';
+          fieldOptions.translation.add('Translated');
+        }
+      }
+    }
 
     const container = document.createElement('div');
     container.innerHTML = optionsHTML;
     document.querySelector('.torrent_table').before(container);
     const containerBody = container.querySelector('.filtersDiv');
 
-    // Create checkboxes for filtering torrents
-    const checkboxes = [];
-
-    for (const field of importantFields) {
+    for (const field of Object.keys(fieldOptions)) {
       const options = Array.from(fieldOptions[field]);
       const table = document.createElement('table');
       table.id = `userscript-filter-${field}`;
@@ -109,6 +145,7 @@ const optionsHTML = /* html */ `
         for (const checkbox of parent.querySelectorAll('input')) {
           checkbox.checked = true;
         }
+        updateTorrents();
       });
       table.appendChild(selectAllButton);
 
@@ -119,6 +156,7 @@ const optionsHTML = /* html */ `
         for (const checkbox of parent.querySelectorAll('input')) {
           checkbox.checked = false;
         }
+        updateTorrents();
       });
       table.appendChild(deselectAllButton);
 
@@ -140,19 +178,7 @@ const optionsHTML = /* html */ `
         checkbox.checked = true;
         // Loop through torrents and check for matches
         checkbox.addEventListener('change', () => {
-          const selectedValues = checkboxes
-            .filter((checkbox) => checkbox.checked)
-            .map((checkbox) => checkbox.value);
-          for (const id in torrentInfo) {
-            const torrent = torrentInfo[id];
-            const isMatch = importantFields.every((field) =>
-              selectedValues.includes(torrent[field])
-            );
-            torrent.torrentRow.classList.toggle('hide', !isMatch);
-            if (!isMatch) {
-              torrent.infoElem.classList.toggle('hide', !isMatch);
-            }
-          }
+          updateTorrents();
         });
         // Create cell and label elements for checkbox
         const cell = document.createElement('td');
@@ -170,3 +196,19 @@ const optionsHTML = /* html */ `
     }
   }, 1000);
 })();
+
+function updateTorrents() {
+  const selectedValues = checkboxes
+    .filter((checkbox) => checkbox.checked)
+    .map((checkbox) => checkbox.value);
+  for (const id in torrentInfo) {
+    const torrent = torrentInfo[id];
+    const isMatch = Object.keys(fieldOptions).every((field) =>
+      selectedValues.includes(torrent[field])
+    );
+    torrent.torrentRow.classList.toggle('hide', !isMatch);
+    if (!isMatch) {
+      torrent.infoElem.classList.toggle('hide', !isMatch);
+    }
+  }
+}
