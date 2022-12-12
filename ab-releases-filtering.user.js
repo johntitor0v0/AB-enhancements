@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        AB Torrent Releases Filtering
 // @namespace   https://github.com/MarvNC
-// @match       https://animebytes.tv/torrents.php
+// @match       https://animebytes.tv/torrents.php*
 // @grant       none
-// @version     1.1
+// @version     1.2
 // @author      -
 // @description Filters out torrents based on desired options
 // @grant       GM_addStyle
@@ -11,17 +11,56 @@
 const addCSS = /* css */ `
 .filtersDiv {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
-.filtersDiv table tr:first-child {
-  border-bottom: 1px solid #000;
+.filtersDiv div {
+  padding: 0.5em;
 }
-.filtersDiv table tr:nth-child(3) {
-  border-bottom: 1px solid #000;
+.filtersDiv input[type="button"] {
+  /* button styles */
+  font-family: sans-serif;
+  font-size: 14px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: black;
+  background: none !important;
+  margin: 0.2em;
+}
+
+.filtersDiv input[type="button"].selected {
+  /* styles for the selected state of the button */
+  background: #70dcff !important;
+}
+
+.filtersDiv input[type="button"].selected:hover {
+  /* styles for the hover state of the button */
+  background: #b2ecff !important;
+}
+
+.filtersDiv button {
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  padding: 3px;
+  cursor: pointer;
+  width: 45%;
+  display: inline-block;
+  box-sizing: border-box;
+  margin: 0.2em;
+  /* round corners */
+  -webkit-border-radius: 5px;
+}
+
+.filtersDiv button:hover {
+  background-color: #5c6bc0;
+}
+
+.filtersDiv h3 {
   text-align: center;
-}
-.filtersDiv label {
-  margin-left: 0.5em;
+  border-bottom: 1px solid #ccc;
 }
 `;
 GM_addStyle(addCSS);
@@ -44,7 +83,7 @@ const manualFields = {
 const optionsHTML = /* html */ `
 <div class="box">
   <div class="head">
-    <strong>Filters</strong>
+    <strong>Filters (alt + click to select only one)</strong>
   </div>
   <div class="filtersDiv">
   </div>
@@ -53,7 +92,7 @@ const optionsHTML = /* html */ `
 
 const torrentInfo = {};
 const fieldOptions = {};
-const checkboxes = [];
+const buttons = [];
 
 (function () {
   setTimeout(() => {
@@ -134,73 +173,72 @@ const checkboxes = [];
 
     for (const field of Object.keys(fieldOptions)) {
       const options = Array.from(fieldOptions[field]);
-      const table = document.createElement('table');
-      table.id = `userscript-filter-${field}`;
+      const fieldDiv = document.createElement('div');
+      fieldDiv.id = `userscript-filter-${field}`;
+
+      // Add text header with field name
+      const header = document.createElement('h3');
+      header.innerText = field;
+      fieldDiv.appendChild(header);
 
       // Add select/deselect all buttons to table
       const selectAllButton = document.createElement('button');
       selectAllButton.innerText = 'Select all';
       selectAllButton.addEventListener('click', () => {
         const parent = selectAllButton.parentElement;
-        for (const checkbox of parent.querySelectorAll('input')) {
-          checkbox.checked = true;
+        for (const button of parent.querySelectorAll('input')) {
+          button.classList.add('selected');
         }
         updateTorrents();
       });
-      table.appendChild(selectAllButton);
+      fieldDiv.appendChild(selectAllButton);
 
       const deselectAllButton = document.createElement('button');
       deselectAllButton.innerText = 'Deselect all';
       deselectAllButton.addEventListener('click', () => {
         const parent = deselectAllButton.parentElement;
-        for (const checkbox of parent.querySelectorAll('input')) {
-          checkbox.checked = false;
+        for (const button of parent.querySelectorAll('input')) {
+          button.classList.remove('selected');
         }
         updateTorrents();
       });
-      table.appendChild(deselectAllButton);
-
-      // Add table header with field name
-      const header = document.createElement('tr');
-      const headerCell = document.createElement('th');
-      headerCell.colSpan = 2;
-      headerCell.innerText = field;
-      header.appendChild(headerCell);
-      table.appendChild(header);
-      containerBody.appendChild(table);
+      fieldDiv.appendChild(deselectAllButton);
 
       // Add checkboxes for each option
       options.forEach((option) => {
-        const row = document.createElement('tr');
         const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
+        checkbox.type = 'button';
         checkbox.value = option;
-        checkbox.checked = true;
-        // Loop through torrents and check for matches
-        checkbox.addEventListener('change', () => {
+        checkbox.classList.add('selected');
+
+        // on click toggle selected class
+        checkbox.addEventListener('click', (event) => {
+          // check if alt being held down and if so select it and deselect other options
+          if (event.altKey) {
+            const parent = checkbox.parentElement;
+            for (const button of parent.querySelectorAll('input')) {
+              button.classList.remove('selected');
+            }
+            checkbox.classList.add('selected');
+          } else {
+            checkbox.classList.toggle('selected');
+          }
           updateTorrents();
         });
-        // Create cell and label elements for checkbox
-        const cell = document.createElement('td');
-        const label = document.createElement('label');
-        label.innerText = option;
-        label.htmlFor = checkbox.id;
 
         // Append checkbox and label to cell and row
-        cell.appendChild(checkbox);
-        cell.appendChild(label);
-        row.appendChild(cell);
-        table.appendChild(row);
-        checkboxes.push(checkbox);
+        buttons.push(checkbox);
+        fieldDiv.appendChild(checkbox);
       });
+      containerBody.appendChild(fieldDiv);
     }
   }, 1000);
 })();
 
 function updateTorrents() {
-  const selectedValues = checkboxes
-    .filter((checkbox) => checkbox.checked)
-    .map((checkbox) => checkbox.value);
+  const selectedValues = buttons
+    .filter((button) => button.classList.contains('selected'))
+    .map((button) => button.value);
   for (const id in torrentInfo) {
     const torrent = torrentInfo[id];
     const isMatch = Object.keys(fieldOptions).every((field) =>
