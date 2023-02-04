@@ -97,6 +97,10 @@ async function autofillBookwalkerInfo(tab) {
   autofillDiv.innerHTML = `Autofilled info about ${title}!`;
 }
 
+/** Autofills the form with information from Anilist given a search term or URL
+ * @param {HTMLElement} tab - The tab to autofill
+ * @returns {void}
+ */
 async function autofillAnilistInfo(tab) {
   const autofillString = tab.querySelector('#anilist_autofill').value;
   const autofillDiv = tab.querySelector('#auto_anilist');
@@ -107,20 +111,29 @@ async function autofillAnilistInfo(tab) {
 
     const anilistID = autofillString.match(/\/(\d+)\//)[1];
 
-    // Get the info from the URL
-    const { title, jpTitle, year, tags, coverURL, summary } = await getALPrintedMediaInformation(
-      anilistID
-    );
-
-    autofillDiv.innerHTML = `Got info about ${title}!`;
-
-    submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
-
-    autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+    autoFillAnilistFromID(tab, anilistID, autofillDiv);
   } else {
     // TODO search and modal to select
-
   }
+}
+
+/** Autofills the form given an Anilist ID
+ * @param {HTMLElement} tab - The tab to autofill
+ * @param {number} anilistID - The ID of the Anilist entry
+ * @param {HTMLElement} autofillDiv - The div to display autofill messages
+ * @returns {void}
+ */
+async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
+  // Get the info from the URL
+  const { title, jpTitle, year, tags, coverURL, summary } = await getALPrintedMediaInformation(
+    anilistID
+  );
+
+  autofillDiv.innerHTML = `Got info about ${title}!`;
+
+  submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
+
+  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
 }
 
 /**
