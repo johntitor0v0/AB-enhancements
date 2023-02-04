@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.0
+// @version     1.01
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -20,7 +20,7 @@ function setUpAutofillForm() {
   for (const tab of tabs) {
     const autofillSection = tab.querySelector('#autofill');
     const autofillBody = autofillSection.querySelector('.box');
-    const autofillForm = createElementFromHTML(/* html */ `
+    const bwAutofillForm = createElementFromHTML(/* html */ `
 <div>
   <dt>Bookwalker Autofill</dt>
   <dd>
@@ -31,9 +31,9 @@ function setUpAutofillForm() {
   </dd>
 </div>
 `);
-    autofillBody.appendChild(autofillForm);
+    autofillBody.appendChild(bwAutofillForm);
 
-    const autofillButton = autofillForm.querySelector('#bookwalker_autofill_button');
+    const autofillButton = bwAutofillForm.querySelector('#bookwalker_autofill_button');
     autofillButton.addEventListener('click', () => {
       autofillBookwalkerInfo(tab);
     });
