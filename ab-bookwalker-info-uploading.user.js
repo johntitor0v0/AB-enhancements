@@ -18,10 +18,16 @@ const tabs = [lightNovelsTab, mangaTab];
 
 setUpAutofillForm();
 
+/**
+ * Adds new autofill options to the upload form
+ * @returns {void}
+ */
 function setUpAutofillForm() {
   for (const tab of tabs) {
     const autofillSection = tab.querySelector('#autofill');
     const autofillBody = autofillSection.querySelector('.box');
+
+    // Add bookwalker autofill form
     const bwAutofillForm = createElementFromHTML(/* html */ `
 <div>
   <dt>Bookwalker Autofill</dt>
@@ -39,20 +45,43 @@ function setUpAutofillForm() {
     autofillButton.addEventListener('click', () => {
       autofillBookwalkerInfo(tab);
     });
+
+    const anilistAutofillForm = createElementFromHTML(/* html */ `
+<div>
+  <dt>Anilist Autofill</dt>
+  <dd>
+    <input type="text" id="anilist_autofill" size="50" value="" />
+    <input type="button" onclick="" id="anilist_autofill_button" value="Autofill!" /><br />
+    You can either enter an Anilist manga/LN link or type in a title to search.<br />
+    Example valid URLs: https://anilist.co/manga/114920/<br />
+    https://anilist.co/anime/21355/ReZero-kara-Hajimeru-Isekai-Seikatsu<br />
+    <div id="auto_anilist"></div>
+  </dd>
+</div>
+`);
+
+    autofillBody.appendChild(anilistAutofillForm);
+
+    const anilistAutofillButton = anilistAutofillForm.querySelector('#anilist_autofill_button');
+    anilistAutofillButton.addEventListener('click', () => {
+      autofillAnilistInfo(tab);
+    });
   }
 }
 
+/**
+ * Autofills the form with information from Bookwalker
+ * @param {HTMLElement} tab - The tab to autofill
+ * @returns {void}
+ */
 async function autofillBookwalkerInfo(tab) {
   // Get the URL from the input field
   const autofillURL = tab.querySelector('#bookwalker_autofill').value;
-  const autofillButton = tab.querySelector('#bookwalker_autofill_button');
   const autofillDiv = tab.querySelector('#auto_bookwalker');
 
-  // Check if the URL is valid
-  try {
-    new URL(autofillURL);
-  } catch (e) {
-    autofillDiv.innerHTML = 'Invalid URL!';
+  // Check if the URL is a valid Bookwalker URL like https://bookwalker.jp/de7c3bf828-1b91-446b-a54a-7f456afa65a0/
+  if (!autofillURL.match(/^https?:\/\/bookwalker\.jp\/[a-z0-9\-]{38}\/?$/)) {
+    autofillDiv.innerHTML = 'Invalid Bookwalker URL!';
     return;
   }
 
@@ -63,6 +92,51 @@ async function autofillBookwalkerInfo(tab) {
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
+  submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
+
+  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+}
+
+async function autofillAnilistInfo(tab) {
+  const autofillString = tab.querySelector('#anilist_autofill').value;
+  const autofillDiv = tab.querySelector('#auto_anilist');
+
+  // Check if the string is an anilist URL or a search term
+  if (autofillString.match(/^https?:\/\/anilist\.co\/(manga|anime)\/\d+.*$/)) {
+    autofillDiv.innerHTML = `Getting info from ${autofillString}...`;
+
+    const anilistID = autofillString.match(/\/(\d+)\//)[1];
+
+    // Get the info from the URL
+    const { title, jpTitle, year, tags, coverURL, summary } = await getALPrintedMediaInformation(
+      anilistID
+    );
+
+    autofillDiv.innerHTML = `Got info about ${title}!`;
+
+    submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
+
+    autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  } else {
+    // TODO search and modal to select
+    
+  }
+}
+
+/**
+ * Submits the input data to the form
+ * @param {HTMLElement} tab - The tab to autofill
+ * @param {Object} inputData - The data to insert into the form
+ * @returns {void}
+ * @property {string} inputData.title - The Romaji title of the series
+ * @property {string} inputData.jpTitle - The Japanese title of the series
+ * @property {string} inputData.year - The year the series was released
+ * @property {string[]} inputData.tags - The tags of the series
+ * @property {string} inputData.coverURL - The URL of the cover image
+ * @property {string} inputData.summary - The summary of the series
+ */
+function submitInput(tab, inputData) {
+  console.log(inputData);
   // Get the relevant elements to find the input fields to insert the info
   const groupInformationDiv = tab.querySelector('#group_information');
   const groupInformationBody = groupInformationDiv.querySelector('.box');
@@ -70,8 +144,10 @@ async function autofillBookwalkerInfo(tab) {
   const seriesNameDt = [...groupInformationBody.querySelectorAll('dt')].find(
     (dt) => dt.textContent.trim() === 'Series Name'
   );
-  const seriesNameDd = seriesNameDt.nextElementSibling.nextElementSibling;
-  const jpSeriesInput = seriesNameDd.querySelector('input');
+  const romajiSeriesDd = seriesNameDt.nextElementSibling;
+  const jpSeriesDd = seriesNameDt.nextElementSibling.nextElementSibling;
+  const romajiSeriesInput = romajiSeriesDd.querySelector('input');
+  const jpSeriesInput = jpSeriesDd.querySelector('input');
 
   const yearDt = [...groupInformationBody.querySelectorAll('dt')].find(
     (dt) => dt.textContent.trim() === 'Year'
@@ -79,25 +155,36 @@ async function autofillBookwalkerInfo(tab) {
   const yearDd = yearDt.nextElementSibling;
   const yearInput = yearDd.querySelector('input');
 
+  const tagsDt = [...groupInformationBody.querySelectorAll('dt')].find(
+    (dt) => dt.textContent.trim() === 'Tags'
+  );
+  const tagsDd = tagsDt.nextElementSibling;
+  const tagsInput = tagsDd.querySelector('input');
+
   const coverDt = [...groupInformationBody.querySelectorAll('dt')].find(
     (dt) => dt.textContent.trim() === 'Image'
   );
   const coverDd = coverDt.nextElementSibling;
   const coverInput = coverDd.querySelector('input');
 
-  const synopsisDt = [...groupInformationBody.querySelectorAll('dt')].find(
+  const summaryDt = [...groupInformationBody.querySelectorAll('dt')].find(
     (dt) => dt.textContent.trim() === 'Series Description'
   );
-  const synopsisDd = synopsisDt.nextElementSibling;
-  const synopsisInput = synopsisDd.querySelector('textarea');
+  const summaryDd = summaryDt.nextElementSibling;
+  const summaryInput = summaryDd.querySelector('textarea');
 
-  // Insert the info into the input fields
-  jpSeriesInput.value = title;
-  yearInput.value = releaseYear;
-  coverInput.value = coverURL;
-  synopsisInput.value = summary;
-
-  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  // Insert the info into the input fields, check if the info exists and if the field is empty
+  const insertInfo = (input, info) => {
+    if (info && !input.value) {
+      input.value = info;
+    }
+  };
+  insertInfo(romajiSeriesInput, inputData.title);
+  insertInfo(jpSeriesInput, inputData.jpTitle);
+  insertInfo(yearInput, inputData.year);
+  insertInfo(tagsInput, inputData.tags?.join(', '));
+  insertInfo(coverInput, inputData.coverURL);
+  insertInfo(summaryInput, inputData.summary);
 }
 
 /**
@@ -227,7 +314,7 @@ async function searchALMedia(search, type) {
 /**
  * Retrieve information about a manga using its ID from the AniList API.
  * @param {Number} id - The ID of the manga.
- * @return {Object} - The data returned from the API, containing information about the manga.
+ * @return {Object} - An object containing the title, Japanese title, year, tags, cover URL, and summary of the manga.
  */
 async function getALPrintedMediaInformation(id) {
   const query = `
@@ -257,7 +344,14 @@ async function getALPrintedMediaInformation(id) {
 
   const response = await sendALGraphQLRequest(query, variables);
 
-  return response.data;
+  return {
+    title: response.data.Media.title.romaji,
+    jpTitle: response.data.Media.title.native,
+    year: response.data.Media.startDate.year,
+    tags: response.data.Media.tags.map((tag) => tag.name),
+    coverURL: response.data.Media.coverImage.extraLarge,
+    summary: response.data.Media.description,
+  };
 }
 
 /**
