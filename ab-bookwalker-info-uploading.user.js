@@ -3,11 +3,13 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.01
+// @version     1.02
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
+
+const anilistGraphQlURL = 'https://graphql.anilist.co';
 
 const lightNovelsTab = document.getElementById('light_novels');
 const mangaTab = document.getElementById('manga');
@@ -45,6 +47,15 @@ async function autofillBookwalkerInfo(tab) {
   const autofillURL = tab.querySelector('#bookwalker_autofill').value;
   const autofillButton = tab.querySelector('#bookwalker_autofill_button');
   const autofillDiv = tab.querySelector('#auto_bookwalker');
+
+  // Check if the URL is valid
+  try {
+    new URL(autofillURL);
+  } catch (e) {
+    autofillDiv.innerHTML = 'Invalid URL!';
+    return;
+  }
+
   autofillDiv.innerHTML = `Getting info from ${autofillURL}...`;
 
   // Get the info from the URL
@@ -108,7 +119,9 @@ async function getBookwalkerPageInfo(url) {
 
   // Get the synopsis
   const summaryBodyElement = bookwalkerPage.getElementById('js-summary-collapse-main-product');
-  const summary = summaryBodyElement.innerText.trim();
+  const rawSummary = summaryBodyElement.innerText.trim();
+  // Remove excess whitespace from start of lines
+  const summary = rawSummary.replace(/^ +/gm, '');
 
   // Get release date
   const dataLabels = [...bookwalkerPage.querySelector('.p-information__data').children];
@@ -151,13 +164,13 @@ async function getBookwalkerPageInfo(url) {
  * @returns {Element}
  */
 function createElementFromHTML(htmlString) {
-  var div = document.createElement('div');
+  const div = document.createElement('div');
   div.innerHTML = htmlString.trim();
   return div.firstChild;
 }
 
 /**
- * Gets the document from a URL
+ * Gets the document from a URL using GM_xmlhttpRequest to access other domains
  * @param {string} url
  * @returns {Promise<Document>}
  */
@@ -173,6 +186,115 @@ async function getDocumentFromURL(url) {
       },
       onerror: function (error) {
         reject(error);
+      },
+    });
+  });
+}
+
+/**
+ * Searches a string to get a list of IDs, titles, and cover URLs from the AniList API.
+ * @param {string} search - The search string to use.
+ * @param {string} type - The type of media to search for. Can be MANGA or NOVEL.
+ * @return {Object[]} - An array of objects containing the ID, title, and cover URL of each result.
+ */
+async function searchALMedia(search, type) {
+  const query = `
+    query ($search: String, $format: MediaFormat) {
+      manga: Page(perPage: 5) {
+        results: media(type: MANGA, search: $search, format: $format) {
+          id
+          title {
+            native
+            romaji
+          }
+          coverImage {
+            large
+          }
+        }
+      }
+    }`;
+
+  const variables = {
+    search: search,
+    format: type,
+  };
+
+  const response = await sendALGraphQLRequest(query, variables);
+  const results = response.data.manga.results;
+  return results;
+}
+
+/**
+ * Retrieve information about a manga using its ID from the AniList API.
+ * @param {Number} id - The ID of the manga.
+ * @return {Object} - The data returned from the API, containing information about the manga.
+ */
+async function getALPrintedMediaInformation(id) {
+  const query = `
+    query ($id: Int) { 
+      Media (id: $id, type: MANGA) { 
+        id
+        title {
+          romaji
+          native
+        }
+        startDate {
+          year
+        }
+        tags {
+          name
+        }
+        coverImage {
+          extraLarge
+        }
+        description
+      }
+    }`;
+
+  const variables = {
+    id: id,
+  };
+
+  const response = await sendALGraphQLRequest(query, variables);
+
+  return response.data;
+}
+
+/**
+ * Sends a GraphQL API request to Anilist using GM_xmlhttpRequest
+ * @param {string} query - The GraphQL query string
+ * @param {object} variables - The variables to be used in the query
+ * @param {string} url - The URL of the GraphQL API endpoint
+ * @return {object} The API response in JSON format
+ */
+async function sendALGraphQLRequest(query, variables, url = anilistGraphQlURL) {
+  // Define the config for our API request
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    data: JSON.stringify({
+      query: query,
+      variables: variables,
+    }),
+  };
+
+  // Return a promise that resolves to the API response
+  return new Promise((resolve, reject) => {
+    GM_xmlhttpRequest({
+      method: options.method,
+      url: url,
+      headers: options.headers,
+      data: options.data,
+      onload: function (response) {
+        const data = JSON.parse(response.responseText);
+        if (response.status === 200) {
+          resolve(data);
+        } else {
+          reject(data);
+        }
       },
     });
   });
