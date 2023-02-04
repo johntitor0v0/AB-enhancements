@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        AB Bookwalker Printed Media Details
+// @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
@@ -7,16 +7,25 @@
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
+// @grant       GM_addStyle
+// @grant       GM_getResourceText
+// @resource    modalStyling https://gist.githubusercontent.com/ghosh/4f94cf497d7090359a5c9f81caf60699/raw/d9281f3298b46d9cf991b674bc6e1c1ed14e91cc/micromodal.css
+// @require     https://unpkg.com/micromodal@0.4.10/dist/micromodal.min.js
 // ==/UserScript==
 
 const anilistGraphQlURL = 'https://graphql.anilist.co';
+const MAX_RESULTS = 10;
 
 const lightNovelsTab = document.getElementById('light_novels');
 const mangaTab = document.getElementById('manga');
 
 const tabs = [lightNovelsTab, mangaTab];
 
-setUpAutofillForm();
+(function () {
+  'use strict';
+
+  setUpAutofillForm();
+})();
 
 /**
  * Adds new autofill options to the upload form
@@ -67,6 +76,38 @@ function setUpAutofillForm() {
       autofillAnilistInfo(tab);
     });
   }
+  console.log('Autofill form set up');
+  setUpModal();
+}
+
+function setUpModal() {
+  const modalCSS = GM_getResourceText('modalStyling');
+  GM_addStyle(modalCSS);
+  // Set up modal for later
+  document.body.insertAdjacentHTML(
+    'beforeend' /* html */,
+    `
+<div class="modal micromodal-slide" id="anilistModal" aria-hidden="true">
+  <div class="modal__overlay" tabindex="-1" data-micromodal-close>
+    <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="anilistModal-title">
+      <header class="modal__header">
+        <h2 class="modal__title" id="anilistModal-title">
+          <!-- Add title -->
+        </h2>
+        <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+      </header>
+      <main class="modal__content" id="anilistModal-content">
+        <!-- Add content -->
+      </main>
+    </div>
+  </div>
+</div>;
+`
+  );
+
+  MicroModal.init();
+
+  console.log('Modal set up');
 }
 
 /**
@@ -113,7 +154,53 @@ async function autofillAnilistInfo(tab) {
 
     autoFillAnilistFromID(tab, anilistID, autofillDiv);
   } else {
-    // TODO search and modal to select
+    const currentType = tab === lightNovelsTab ? 'NOVEL' : 'MANGA';
+
+    autofillDiv.innerHTML = `Searching for ${autofillString}...`;
+
+    const results = await searchALMedia(autofillString, currentType);
+
+    if (results.length < 1) {
+      autofillDiv.innerHTML = `No results found for ${autofillString}!`;
+      return;
+    }
+    if (results.length === 1) {
+      autofillDiv.innerHTML = `Found 1 result for ${autofillString}!`;
+      autoFillAnilistFromID(tab, results[0].id, autofillDiv);
+      return;
+    }
+    if (results.length > 1) {
+      // Show modal to choose proper title
+      autofillDiv.innerHTML = `Found ${results.length} results for ${autofillString}!`;
+
+      const modalTitle = document.querySelector('#anilistModal-title');
+      const modalContent = document.querySelector('#anilistModal-content');
+
+      modalTitle.innerHTML = `Select a result for ${autofillString}`;
+
+      // Display clickable image covers in modal content to select the proper title/ID
+      // Use loadExternalImage to load the base64 image data from Anilist
+      let modalContentHTML = '';
+      for (const result of results) {
+        modalContentHTML += `
+<div class="anilistResult" data-id="${result.id}">
+  <img class="anilistImage" />
+  <p>${result.title.romaji}</p>
+</div>
+`;
+      }
+      modalContent.innerHTML = modalContentHTML;
+
+      for (const result of results) {
+        loadExternalImage(result.coverImage.large, (dataURL) => {
+          document.querySelector(`[data-id="${result.id}"] .anilistImage`).src = dataURL;
+        });
+      }
+
+      // TODO: better styling, event listener for clicking on a result
+
+      MicroModal.show('anilistModal');
+    }
   }
 }
 
@@ -300,7 +387,7 @@ async function getDocumentFromURL(url) {
 async function searchALMedia(search, type) {
   const query = `
     query ($search: String, $format: MediaFormat) {
-      manga: Page(perPage: 5) {
+      manga: Page(perPage: ${MAX_RESULTS}) {
         results: media(type: MANGA, search: $search, format: $format) {
           id
           title {
@@ -404,5 +491,34 @@ async function sendALGraphQLRequest(query, variables, url = anilistGraphQlURL) {
         }
       },
     });
+  });
+}
+
+/**
+ * Loads an external image from a given URL.
+ * @param {string} url - The URL of the image to be loaded.
+ * @param {function} callback - The callback function to be called when the image is loaded. The function returns the data URL of the image.
+ */
+function loadExternalImage(url, callback) {
+  GM_xmlhttpRequest({
+    method: 'GET',
+    url: url,
+    responseType: 'arraybuffer',
+    onload: function (response) {
+      // Convert the response to base64
+      const base64 = btoa(
+        new Uint8Array(response.response).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ''
+        )
+      );
+
+      // Create a data URL from the base64 depending on the image type
+      const isPng = url.endsWith('.png');
+      const dataURL = 'data:image/' + (isPng ? 'png' : 'jpeg') + ';base64,' + base64;
+      
+      // Call the callback function
+      callback(dataURL);
+    },
   });
 }
