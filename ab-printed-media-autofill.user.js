@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.22
+// @version     1.23
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -216,7 +216,7 @@ async function autofillAnilistInfo(tab) {
   if (autofillString.match(/^https?:\/\/anilist\.co\/(manga|anime)\/\d+.*$/)) {
     autofillDiv.innerHTML = `Getting info from ${autofillString}...`;
 
-    const anilistID = autofillString.match(/\/(\d+)\//)[1];
+    const anilistID = autofillString.match(/manga\/(\d+)\b/)[1];
 
     autoFillAnilistFromID(tab, anilistID, autofillDiv);
   } else {
