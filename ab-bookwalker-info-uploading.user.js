@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.03
+// @version     1.1
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -21,9 +21,79 @@ const mangaTab = document.getElementById('manga');
 
 const tabs = [lightNovelsTab, mangaTab];
 
+const addCSS = /* css */ `
+/* mostly stolen from Anilist with adjustments */
+:root {
+  --color-overlay: 49,31,47;
+  --color-background: 11,22,34;
+  --color-foreground: 21,31,46;
+}
+.modal {
+  position: absolute !important;
+  z-index: 1000;
+  font-family: Noto Sans JP,Noto Sans,Roboto,-apple-system,BlinkMacSystemFont,Segoe UI,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif !important;
+}
+.modal__container {
+  max-width: 1500px !important;
+  width: 85% !important;
+  background-color: rgb(var(--color-background)) !important;
+  z-index: 2000 !important;
+}
+.modal__title {
+  color: white !important;
+}
+
+#anilistModal-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 230px);
+  grid-template-rows: repeat(auto-fill, 322px);
+  grid-gap: 30px;
+  justify-content: center;
+}
+
+.anilistResult {
+  border-radius: 3px;
+  box-shadow: 0 2px 20px rgba(49,54,68,.2);
+  display: inline-block;
+  font-size: 1.15rem;
+  height: 322px;
+  position: relative;
+}
+.anilistResult:hover {
+  box-shadow: 0 2px 20px white;
+  cursor: pointer;
+}
+
+.anilistImage {
+  border-radius: 3px;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  object-fit: cover;
+  top: 0;
+  width: 100%;
+  z-index: 0;
+}
+
+.anilistTitle {
+  background: rgba(var(--color-overlay),.8);
+  border-radius: 0 0 3px 3px;
+  bottom: 0;
+  box-sizing: border-box;
+  left: 0;
+  padding: 12px;
+  position: absolute;
+  width: 100%;
+  z-index: 2;
+  word-break: break-word;
+  color: white;
+}
+`;
+
 (function () {
   'use strict';
 
+  GM_addStyle(addCSS);
   setUpAutofillForm();
 })();
 
@@ -51,9 +121,7 @@ function setUpAutofillForm() {
     autofillBody.appendChild(bwAutofillForm);
 
     const autofillButton = bwAutofillForm.querySelector('#bookwalker_autofill_button');
-    autofillButton.addEventListener('click', () => {
-      autofillBookwalkerInfo(tab);
-    });
+    autofillButton.addEventListener('click', () => autofillBookwalkerInfo(tab));
 
     const anilistAutofillForm = createElementFromHTML(/* html */ `
 <div>
@@ -72,9 +140,7 @@ function setUpAutofillForm() {
     autofillBody.appendChild(anilistAutofillForm);
 
     const anilistAutofillButton = anilistAutofillForm.querySelector('#anilist_autofill_button');
-    anilistAutofillButton.addEventListener('click', () => {
-      autofillAnilistInfo(tab);
-    });
+    anilistAutofillButton.addEventListener('click', () => autofillAnilistInfo(tab));
   }
   console.log('Autofill form set up');
   setUpModal();
@@ -185,19 +251,24 @@ async function autofillAnilistInfo(tab) {
         modalContentHTML += `
 <div class="anilistResult" data-id="${result.id}">
   <img class="anilistImage" />
-  <p>${result.title.romaji}</p>
+  <div class="anilistTitle">${result.title.romaji}</div>
 </div>
 `;
       }
       modalContent.innerHTML = modalContentHTML;
 
       for (const result of results) {
+        const resultDiv = document.querySelector(`[data-id="${result.id}"]`);
+        const image = document.querySelector(`[data-id="${result.id}"] .anilistImage`);
         loadExternalImage(result.coverImage.large, (dataURL) => {
-          document.querySelector(`[data-id="${result.id}"] .anilistImage`).src = dataURL;
+          image.src = dataURL;
+        });
+        resultDiv.addEventListener('click', () => {
+          console.log(`Autofilling from Anilist ID ${result.id}...`);
+          autoFillAnilistFromID(tab, result.id, autofillDiv);
+          MicroModal.close('anilistModal');
         });
       }
-
-      // TODO: better styling, event listener for clicking on a result
 
       MicroModal.show('anilistModal');
     }
@@ -444,13 +515,17 @@ async function getALPrintedMediaInformation(id) {
 
   const response = await sendALGraphQLRequest(query, variables);
 
+  const dummyElem = document.createElement('div');
+  dummyElem.innerHTML = response.data.Media.description;
+  const cleanSummary = dummyElem.textContent;
+
   return {
     title: response.data.Media.title.romaji,
     jpTitle: response.data.Media.title.native,
     year: response.data.Media.startDate.year,
     tags: response.data.Media.tags.map((tag) => tag.name),
     coverURL: response.data.Media.coverImage.extraLarge,
-    summary: response.data.Media.description,
+    summary: cleanSummary,
   };
 }
 
@@ -516,7 +591,7 @@ function loadExternalImage(url, callback) {
       // Create a data URL from the base64 depending on the image type
       const isPng = url.endsWith('.png');
       const dataURL = 'data:image/' + (isPng ? 'png' : 'jpeg') + ';base64,' + base64;
-      
+
       // Call the callback function
       callback(dataURL);
     },
