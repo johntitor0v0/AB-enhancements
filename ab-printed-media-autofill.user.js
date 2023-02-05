@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.23
+// @version     1.24
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -310,7 +310,7 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 function submitInput(tab, inputData) {
   console.log(inputData);
 
-  const inputTagString = inputData.tags?.join(',').replace(' ', '.').toLowerCase();
+  const inputTagString = inputData.tags?.join(',').replace(/ /g, '.').toLowerCase();
   // Get the relevant elements to find the input fields to insert the info
   const groupInformationDiv = tab.querySelector('#group_information');
   const groupInformationBody = groupInformationDiv.querySelector('.box');
