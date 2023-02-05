@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.2
+// @version     1.21
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -308,6 +308,8 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
  */
 function submitInput(tab, inputData) {
   console.log(inputData);
+
+  const inputTagString = inputData.tags.join(',').replace(' ', '.').toLowerCase();
   // Get the relevant elements to find the input fields to insert the info
   const groupInformationDiv = tab.querySelector('#group_information');
   const groupInformationBody = groupInformationDiv.querySelector('.box');
@@ -353,7 +355,7 @@ function submitInput(tab, inputData) {
   insertInfo(romajiSeriesInput, inputData.title);
   insertInfo(jpSeriesInput, inputData.jpTitle);
   insertInfo(yearInput, inputData.year);
-  insertInfo(tagsInput, inputData.tags?.join(',')).replace(' ', '.').toLowerCase();
+  insertInfo(tagsInput, inputTagString);
   insertInfo(coverInput, inputData.coverURL);
   insertInfo(summaryInput, inputData.summary);
 }
