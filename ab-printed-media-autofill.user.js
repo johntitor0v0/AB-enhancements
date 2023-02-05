@@ -291,7 +291,8 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 
   submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!<br>This series is <span style="color: red;">${status}</span>!`;
+  autofillDiv.innerHTML = `Autofilled info about ${title}!`
+  if(status) autofillDiv.innerHTML += `<br>This series is <span style="color: red;">${status}</span>!`;
 }
 
 /**
@@ -309,7 +310,7 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 function submitInput(tab, inputData) {
   console.log(inputData);
 
-  const inputTagString = inputData.tags.join(',').replace(' ', '.').toLowerCase();
+  const inputTagString = inputData.tags?.join(',').replace(' ', '.').toLowerCase();
   // Get the relevant elements to find the input fields to insert the info
   const groupInformationDiv = tab.querySelector('#group_information');
   const groupInformationBody = groupInformationDiv.querySelector('.box');
