@@ -3,7 +3,7 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
 // @grant       none
-// @version     1.1
+// @version     1.2
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -283,7 +283,7 @@ async function autofillAnilistInfo(tab) {
  */
 async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
   // Get the info from the URL
-  const { title, jpTitle, year, tags, coverURL, summary } = await getALPrintedMediaInformation(
+  const { title, jpTitle, year, tags, coverURL, summary, status } = await getALPrintedMediaInformation(
     anilistID
   );
 
@@ -291,7 +291,7 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 
   submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  autofillDiv.innerHTML = `Autofilled info about ${title}!<br>This series is <span style="color: red;">${status}</span>!`;
 }
 
 /**
@@ -353,7 +353,7 @@ function submitInput(tab, inputData) {
   insertInfo(romajiSeriesInput, inputData.title);
   insertInfo(jpSeriesInput, inputData.jpTitle);
   insertInfo(yearInput, inputData.year);
-  insertInfo(tagsInput, inputData.tags?.join(', '));
+  insertInfo(tagsInput, inputData.tags?.join(',')).replace(' ', '.').toLowerCase();
   insertInfo(coverInput, inputData.coverURL);
   insertInfo(summaryInput, inputData.summary);
 }
@@ -499,6 +499,7 @@ async function getALPrintedMediaInformation(id) {
         startDate {
           year
         }
+        genres
         tags {
           name
         }
@@ -506,6 +507,7 @@ async function getALPrintedMediaInformation(id) {
           extraLarge
         }
         description
+        status
       }
     }`;
 
@@ -523,9 +525,10 @@ async function getALPrintedMediaInformation(id) {
     title: response.data.Media.title.romaji,
     jpTitle: response.data.Media.title.native,
     year: response.data.Media.startDate.year,
-    tags: response.data.Media.tags.map((tag) => tag.name),
+    tags: [...response.data.Media.genres, ...response.data.Media.tags.map((tag) => tag.name)],
     coverURL: response.data.Media.coverImage.extraLarge,
     summary: cleanSummary,
+    status: response.data.Media.status,
   };
 }
 
