@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.25
+// @version     1.3
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -112,7 +112,9 @@ function setUpAutofillForm() {
   <dd>
     <input type="text" id="bookwalker_autofill" size="50" value="" />
     <input type="button" onclick="" id="bookwalker_autofill_button" value="Autofill!" /><br />
-    The link should look like: https://bookwalker.jp/de169a9fbd-50ef-43cf-92bf-4e2f4ac7124a/<br />
+    The link should look like: <br />
+    https://bookwalker.jp/de169a9fbd-50ef-43cf-92bf-4e2f4ac7124a/<br />
+    https://bookwalker.jp/series/67415/list/<br />
     <div id="auto_bookwalker"></div>
   </dd>
 </div>
@@ -182,19 +184,42 @@ function setUpModal() {
  */
 async function autofillBookwalkerInfo(tab) {
   // Get the URL from the input field
-  const autofillURL = tab.querySelector('#bookwalker_autofill').value;
+  const formInput = tab.querySelector('#bookwalker_autofill').value;
   const autofillDiv = tab.querySelector('#auto_bookwalker');
 
+  let volumeURL = '';
+  let title = '';
+
   // Check if the URL is a valid Bookwalker URL like https://bookwalker.jp/de7c3bf828-1b91-446b-a54a-7f456afa65a0/
-  if (!autofillURL.match(/^https?:\/\/bookwalker\.jp\/[a-z0-9\-]{38}\/?$/)) {
-    autofillDiv.innerHTML = 'Invalid Bookwalker URL!';
+  if (formInput.match(/^https?:\/\/bookwalker\.jp\/[a-z0-9\-]{38}\/?$/)) {
+    volumeURL = formInput;
+  }
+  // Else check if matches series like https://bookwalker.jp/series/225244/list/
+  else if (formInput.match(/^https?:\/\/bookwalker\.jp\/series\/\d+\/list\/?$/)) {
+    const data = await getBookwalkerSeriesInfo(formInput);
+    if (data === null) {
+      autofillDiv.innerHTML = 'Invalid URL!';
+      return;
+    }
+    volumeURL = data.books[0];
+    title = data.title;
+  } else {
+    autofillDiv.innerHTML = 'Invalid URL!';
     return;
   }
 
-  autofillDiv.innerHTML = `Getting info from ${autofillURL}...`;
+  autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
 
   // Get the info from the URL
-  const { title, summary, releaseYear, coverURL } = await getBookwalkerPageInfo(autofillURL);
+  const volumeData = await getBookwalkerPageInfo(volumeURL);
+  if (volumeData === null) {
+    autofillDiv.innerHTML = 'Invalid URL!';
+    return;
+  }
+  title = title || volumeData.title;
+  const releaseYear = volumeData.releaseYear;
+  const coverURL = volumeData.coverURL;
+  const summary = volumeData.summary;
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
@@ -282,16 +307,16 @@ async function autofillAnilistInfo(tab) {
  */
 async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
   // Get the info from the URL
-  const { title, jpTitle, year, tags, coverURL, summary, status } = await getALPrintedMediaInformation(
-    anilistID
-  );
+  const { title, jpTitle, year, tags, coverURL, summary, status } =
+    await getALPrintedMediaInformation(anilistID);
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
   submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!`
-  if(status) autofillDiv.innerHTML += `<br>This series is <span style="color: red;">${status}</span>!`;
+  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  if (status)
+    autofillDiv.innerHTML += `<br>This series is <span style="color: red;">${status}</span>!`;
 }
 
 /**
@@ -307,7 +332,7 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
  * @property {string} inputData.summary - The summary of the series
  */
 function submitInput(tab, inputData) {
-  console.log(inputData);
+  console.log('inputting', inputData);
 
   const inputTagString = inputData.tags?.join(',').replace(/ /g, '.').toLowerCase();
   // Get the relevant elements to find the input fields to insert the info
@@ -415,6 +440,33 @@ async function getBookwalkerPageInfo(url) {
     summary,
     releaseYear,
     coverURL,
+  };
+}
+
+/**
+ * Given a bookwalker series page, return information about the titles and URLs of the books in the series
+ * @param {string} url
+ * @returns {Promise<Object[]>} An object containing:
+ * - title: string, the series title
+ * - books: string[], an array of URLs to the books in the series in order of release
+ */
+async function getBookwalkerSeriesInfo(url) {
+  const doc = await getDocumentFromURL(url);
+  let bookURLs = [];
+  const title = doc.querySelector('meta[property="og:description"]').content.split('、')[0];
+
+  [...doc.querySelector('.o-contents-section__body .m-tile-list').children].forEach((book) => {
+    let em = book.querySelector('p a[href]');
+    if (em) bookURLs.unshift(em.href);
+    else {
+      em = book.querySelector('div');
+      if (em.dataset.url) bookURLs.unshift(em.dataset.url);
+    }
+  });
+
+  return {
+    title,
+    books: bookURLs,
   };
 }
 
