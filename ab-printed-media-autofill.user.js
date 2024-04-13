@@ -195,50 +195,57 @@ async function autofillBookwalkerInfo(tab) {
 
   const { volumeURL, title } = await getVolumeURLAndTitle(formInput);
   if (!volumeURL) {
-    // Make modal
-    // // Show modal to choose proper title
-    // autofillDiv.innerHTML = `Found ${results.length} results for ${autofillString}!`;
+    const results = await searchBookwalker(formInput);
+    // Show modal to choose proper title
+    autofillDiv.innerHTML = `Found ${results.length} results for ${formInput}!`;
 
-    // const modalTitle = document.querySelector('#booksModal-title');
-    // const modalContent = document.querySelector('#booksModal-content');
+    const modalTitle = document.querySelector('#booksModal-title');
+    const modalContent = document.querySelector('#booksModal-content');
 
-    // modalTitle.innerHTML = `Select a result for ${autofillString}`;
+    modalTitle.innerHTML = `Select a result for ${formInput}`;
 
-    // // Display clickable image covers in modal content to select the proper title/ID
-    // // Use loadExternalImage to load the base64 image data from Anilist
-    // let modalContentHTML = '';
-    // for (const result of results) {
-    //   modalContentHTML += `
-    // <div class="anilistResult" data-id="${result.id}">
-    //   <img class="anilistImage" />
-    //   <div class="anilistTitle">${result.title.romaji}</div>
-    // </div>
-    // `;
-    // }
-    // modalContent.innerHTML = modalContentHTML;
+    // Display clickable image covers in modal content to select the proper title/ID
+    // Use loadExternalImage to load the base64 image data
+    let modalContentHTML = '';
+    for (const result of results) {
+      modalContentHTML += `
+    <div class="anilistResult" data-id="${result.title}">
+      <img class="anilistImage" />
+      <div class="anilistTitle">${result.title}</div>
+    </div>
+    `;
+    }
+    modalContent.innerHTML = modalContentHTML;
 
-    // for (const result of results) {
-    //   const resultDiv = document.querySelector(`[data-id="${result.id}"]`);
-    //   const image = document.querySelector(
-    //     `[data-id="${result.id}"] .anilistImage`
-    //   );
-    //   loadExternalImage(result.coverImage.large, (dataURL) => {
-    //     image.src = dataURL;
-    //   });
-    //   resultDiv.addEventListener('click', () => {
-    //     console.log(`Autofilling from Anilist ID ${result.id}...`);
-    //     autoFillAnilistFromID(tab, result.id, autofillDiv);
-    //     MicroModal.close('booksModal');
-    //   });
-    // }
+    for (const result of results) {
+      const resultDiv = document.querySelector(`[data-id="${result.title}"]`);
+      const image = document.querySelector(
+        `[data-id="${result.title}"] .anilistImage`
+      );
+      loadExternalImage(result.imageUrl, (dataURL) => {
+        image.src = dataURL;
+      });
+      resultDiv.addEventListener('click', () => {
+        console.log(`Autofilling from Bookwalker URL ${result.url}...`);
+        autofillDiv.innerHTML = `Autofilling from Bookwalker URL ${result.url}...`;
+        autofillFromBookwalkerURL(tab, result.url, autofillDiv, result.title);
+        MicroModal.close('booksModal');
+      });
+    }
 
-    // MicroModal.show('booksModal');
+    MicroModal.show('booksModal');
+    return;
   }
 
   autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
   autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
 }
 
+/**
+ * Searches Bookwalker for books based on the provided query.
+ * @param {string} query - The search query.
+ * @returns {Promise<Array<{title: string, url: string, imageUrl: string}>>} - An array of objects containing the title, URL, and cover image URL of each result.
+ */
 async function searchBookwalker(query) {
   const BW_SEARCH_URL = 'https://bookwalker.jp/search/?word=';
   const searchURL = BW_SEARCH_URL + encodeURIComponent(query);
