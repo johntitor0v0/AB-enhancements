@@ -112,8 +112,8 @@ function setUpAutofillForm() {
   <dd>
     <input type="text" id="bookwalker_autofill" size="50" value="" />
     <input type="button" onclick="" id="bookwalker_autofill_button" value="Autofill!" /><br />
-    The link should look like: <br />
-    https://bookwalker.jp/de169a9fbd-50ef-43cf-92bf-4e2f4ac7124a/<br />
+    You can enter a valid bookwalker URL or type in a title to search. <br />
+    Example URLs: https://bookwalker.jp/de169a9fbd-50ef-43cf-92bf-4e2f4ac7124a/<br />
     https://bookwalker.jp/series/67415/list/<br />
     <div id="auto_bookwalker"></div>
   </dd>
