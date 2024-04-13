@@ -317,7 +317,8 @@ async function autofillFromBookwalkerURL(
 
   submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  autofillDiv.innerHTML = `Autofilled info about ${title}!
+  <br>This title first released <span style="color: red;">${volumeData.dateString}</span>!`;
 }
 
 /** Autofills the form with information from Anilist given a search term or URL
@@ -545,6 +546,7 @@ async function getBookwalkerPageInfo(url) {
     title,
     summary,
     releaseYear,
+    dateString,
     coverURL,
   };
 }
