@@ -317,7 +317,7 @@ async function autofillFromBookwalkerURL(
 
   submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!
+  autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>!
   <br>This title first released <span style="color: red;">${volumeData.dateString}</span>!`;
 }
 
@@ -541,6 +541,7 @@ async function getBookwalkerPageInfo(url) {
 
   // Concatenate all parts to form the final URL
   const coverURL = 'https://c.bookwalker.jp/coverImage_' + imageNumber + '.jpg';
+  // TODO: fix for nan imagenumbers
 
   return {
     title,
