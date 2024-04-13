@@ -225,10 +225,11 @@ async function autofillBookwalkerInfo(tab) {
       loadExternalImage(result.imageUrl, (dataURL) => {
         image.src = dataURL;
       });
-      resultDiv.addEventListener('click', () => {
+      resultDiv.addEventListener('click', async () => {
         console.log(`Autofilling from Bookwalker URL ${result.url}...`);
         autofillDiv.innerHTML = `Autofilling from Bookwalker URL ${result.url}...`;
-        autofillFromBookwalkerURL(tab, result.url, autofillDiv, result.title);
+        const { volumeURL, title } = await getVolumeURLAndTitle(result.url);
+        autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
         MicroModal.close('booksModal');
       });
     }
