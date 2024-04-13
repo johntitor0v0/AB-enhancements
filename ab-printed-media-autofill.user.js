@@ -196,10 +196,63 @@ async function autofillBookwalkerInfo(tab) {
   const { volumeURL, title } = await getVolumeURLAndTitle(formInput);
   if (!volumeURL) {
     // Make modal
+    // // Show modal to choose proper title
+    // autofillDiv.innerHTML = `Found ${results.length} results for ${autofillString}!`;
+
+    // const modalTitle = document.querySelector('#booksModal-title');
+    // const modalContent = document.querySelector('#booksModal-content');
+
+    // modalTitle.innerHTML = `Select a result for ${autofillString}`;
+
+    // // Display clickable image covers in modal content to select the proper title/ID
+    // // Use loadExternalImage to load the base64 image data from Anilist
+    // let modalContentHTML = '';
+    // for (const result of results) {
+    //   modalContentHTML += `
+    // <div class="anilistResult" data-id="${result.id}">
+    //   <img class="anilistImage" />
+    //   <div class="anilistTitle">${result.title.romaji}</div>
+    // </div>
+    // `;
+    // }
+    // modalContent.innerHTML = modalContentHTML;
+
+    // for (const result of results) {
+    //   const resultDiv = document.querySelector(`[data-id="${result.id}"]`);
+    //   const image = document.querySelector(
+    //     `[data-id="${result.id}"] .anilistImage`
+    //   );
+    //   loadExternalImage(result.coverImage.large, (dataURL) => {
+    //     image.src = dataURL;
+    //   });
+    //   resultDiv.addEventListener('click', () => {
+    //     console.log(`Autofilling from Anilist ID ${result.id}...`);
+    //     autoFillAnilistFromID(tab, result.id, autofillDiv);
+    //     MicroModal.close('booksModal');
+    //   });
+    // }
+
+    // MicroModal.show('booksModal');
   }
 
   autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
   autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
+}
+
+async function searchBookwalker(query) {
+  const BW_SEARCH_URL = 'https://bookwalker.jp/search/?word=';
+  const searchURL = BW_SEARCH_URL + encodeURIComponent(query);
+  const doc = await getDocumentFromURL(searchURL);
+  const resultsSection = doc.querySelector('section.o-contents-section');
+  const results = resultsSection.querySelectorAll('li.m-tile');
+  return [...results].map((book) => {
+    const titleAnchor = book.querySelector('p.m-book-item__title > a');
+    return {
+      title: titleAnchor.title,
+      url: titleAnchor.href,
+      imageUrl: book.querySelector('div.m-thumb img').src,
+    };
+  });
 }
 
 /**
