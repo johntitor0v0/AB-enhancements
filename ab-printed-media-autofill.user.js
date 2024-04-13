@@ -189,10 +189,26 @@ function setUpModal() {
  * @returns {void}
  */
 async function autofillBookwalkerInfo(tab) {
-  // Get the URL from the input field
   const formInput = tab.querySelector('#bookwalker_autofill').value;
   const autofillDiv = tab.querySelector('#auto_bookwalker');
+  autofillDiv.innerHTML = 'Getting info...';
 
+  const { volumeURL, title } = await getVolumeURLAndTitle(formInput);
+  if (!volumeURL) {
+    autofillDiv.innerHTML = 'Invalid URL or series!';
+    return;
+  }
+
+  autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
+  autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
+}
+
+/**
+ * Retrieves the volume URL and title from the input field
+ * @param {string} formInput - The input from the form
+ * @returns {Promise<{volumeURL: string, title: string}>} An object containing the volume URL and title
+ */
+async function getVolumeURLAndTitle(formInput) {
   let volumeURL = '';
   let title = '';
 
@@ -205,19 +221,11 @@ async function autofillBookwalkerInfo(tab) {
     formInput.match(/^https?:\/\/bookwalker\.jp\/series\/\d+\/list\/?$/)
   ) {
     const data = await getBookwalkerSeriesInfo(formInput);
-    if (data === null) {
-      autofillDiv.innerHTML = 'Invalid URL!';
-      return;
-    }
     volumeURL = data.books[0];
     title = data.title;
-  } else {
-    autofillDiv.innerHTML = 'Invalid URL!';
-    return;
   }
 
-  autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
-  autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
+  return { volumeURL, title };
 }
 
 /**
@@ -228,7 +236,12 @@ async function autofillBookwalkerInfo(tab) {
  * @param {string} title
  * @returns
  */
-async function autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title = null) {
+async function autofillFromBookwalkerURL(
+  tab,
+  volumeURL,
+  autofillDiv,
+  title = null
+) {
   // Get the info from the URL
   const volumeData = await getBookwalkerPageInfo(volumeURL);
   if (volumeData === null) {
