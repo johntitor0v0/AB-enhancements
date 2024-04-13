@@ -121,7 +121,9 @@ function setUpAutofillForm() {
 `);
     autofillBody.appendChild(bwAutofillForm);
 
-    const autofillButton = bwAutofillForm.querySelector('#bookwalker_autofill_button');
+    const autofillButton = bwAutofillForm.querySelector(
+      '#bookwalker_autofill_button'
+    );
     autofillButton.addEventListener('click', () => autofillBookwalkerInfo(tab));
 
     const anilistAutofillForm = createElementFromHTML(/* html */ `
@@ -140,8 +142,12 @@ function setUpAutofillForm() {
 
     autofillBody.appendChild(anilistAutofillForm);
 
-    const anilistAutofillButton = anilistAutofillForm.querySelector('#anilist_autofill_button');
-    anilistAutofillButton.addEventListener('click', () => autofillAnilistInfo(tab));
+    const anilistAutofillButton = anilistAutofillForm.querySelector(
+      '#anilist_autofill_button'
+    );
+    anilistAutofillButton.addEventListener('click', () =>
+      autofillAnilistInfo(tab)
+    );
   }
   console.log('Autofill form set up');
   setUpModal();
@@ -195,7 +201,9 @@ async function autofillBookwalkerInfo(tab) {
     volumeURL = formInput;
   }
   // Else check if matches series like https://bookwalker.jp/series/225244/list/
-  else if (formInput.match(/^https?:\/\/bookwalker\.jp\/series\/\d+\/list\/?$/)) {
+  else if (
+    formInput.match(/^https?:\/\/bookwalker\.jp\/series\/\d+\/list\/?$/)
+  ) {
     const data = await getBookwalkerSeriesInfo(formInput);
     if (data === null) {
       autofillDiv.innerHTML = 'Invalid URL!';
@@ -209,7 +217,18 @@ async function autofillBookwalkerInfo(tab) {
   }
 
   autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
+  autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
+}
 
+/**
+ * Autofills the form with information from Bookwalker given a volume URL
+ * @param {HTMLElement} tab
+ * @param {string} volumeURL
+ * @param {HTMLDivElement} autofillDiv
+ * @param {string} title
+ * @returns
+ */
+async function autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title = null) {
   // Get the info from the URL
   const volumeData = await getBookwalkerPageInfo(volumeURL);
   if (volumeData === null) {
@@ -283,7 +302,9 @@ async function autofillAnilistInfo(tab) {
 
       for (const result of results) {
         const resultDiv = document.querySelector(`[data-id="${result.id}"]`);
-        const image = document.querySelector(`[data-id="${result.id}"] .anilistImage`);
+        const image = document.querySelector(
+          `[data-id="${result.id}"] .anilistImage`
+        );
         loadExternalImage(result.coverImage.large, (dataURL) => {
           image.src = dataURL;
         });
@@ -334,7 +355,10 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 function submitInput(tab, inputData) {
   console.log('inputting', inputData);
 
-  const inputTagString = inputData.tags?.join(',').replace(/ /g, '.').toLowerCase();
+  const inputTagString = inputData.tags
+    ?.join(',')
+    .replace(/ /g, '.')
+    .toLowerCase();
   // Get the relevant elements to find the input fields to insert the info
   const groupInformationDiv = tab.querySelector('#group_information');
   const groupInformationBody = groupInformationDiv.querySelector('.box');
@@ -403,17 +427,23 @@ async function getBookwalkerPageInfo(url) {
   const title = titleElem.textContent.trim();
 
   // Get the synopsis
-  const summaryBodyElement = bookwalkerPage.getElementById('js-summary-collapse-main-product');
+  const summaryBodyElement = bookwalkerPage.getElementById(
+    'js-summary-collapse-main-product'
+  );
   const rawSummary = summaryBodyElement.innerText.trim();
   // Remove excess whitespace from start of lines
   const summary = rawSummary.replace(/^ +/gm, '');
 
   // Get release date
-  const dataLabels = [...bookwalkerPage.querySelector('.p-information__data').children];
+  const dataLabels = [
+    ...bookwalkerPage.querySelector('.p-information__data').children,
+  ];
   const releaseDateElem =
     dataLabels.find((elem) => elem.innerText == '底本発行日') ??
     dataLabels.find((elem) => elem.innerText == '配信開始日');
-  const dateString = releaseDateElem ? releaseDateElem.nextElementSibling.innerText : null;
+  const dateString = releaseDateElem
+    ? releaseDateElem.nextElementSibling.innerText
+    : null;
   const releaseDate = dateString ? new Date(dateString) : null;
   const releaseYear = releaseDate ? releaseDate.getFullYear() : null;
 
@@ -427,7 +457,10 @@ async function getBookwalkerPageInfo(url) {
   const metaTagContentPart = metaTagContentSplit[3];
 
   // Reverse the 4th part of the content string
-  const metaTagContentPartReversed = metaTagContentPart.split('').reverse().join('');
+  const metaTagContentPartReversed = metaTagContentPart
+    .split('')
+    .reverse()
+    .join('');
 
   // Convert the reversed 4th part of the content string to integer and subtract 1
   const imageNumber = parseInt(metaTagContentPartReversed) - 1;
@@ -453,9 +486,13 @@ async function getBookwalkerPageInfo(url) {
 async function getBookwalkerSeriesInfo(url) {
   const doc = await getDocumentFromURL(url);
   let bookURLs = [];
-  const title = doc.querySelector('meta[property="og:description"]').content.split('、')[0];
+  const title = doc
+    .querySelector('meta[property="og:description"]')
+    .content.split('、')[0];
 
-  [...doc.querySelector('.o-contents-section__body .m-tile-list').children].forEach((book) => {
+  [
+    ...doc.querySelector('.o-contents-section__body .m-tile-list').children,
+  ].forEach((book) => {
     let em = book.querySelector('p a[href]');
     if (em) bookURLs.unshift(em.href);
     else {
@@ -579,7 +616,10 @@ async function getALPrintedMediaInformation(id) {
     title: response.data.Media.title.romaji,
     jpTitle: response.data.Media.title.native,
     year: response.data.Media.startDate.year,
-    tags: [...response.data.Media.genres, ...response.data.Media.tags.map((tag) => tag.name)],
+    tags: [
+      ...response.data.Media.genres,
+      ...response.data.Media.tags.map((tag) => tag.name),
+    ],
     coverURL: response.data.Media.coverImage.extraLarge,
     summary: cleanSummary,
     status: response.data.Media.status,
@@ -647,7 +687,8 @@ function loadExternalImage(url, callback) {
 
       // Create a data URL from the base64 depending on the image type
       const isPng = url.endsWith('.png');
-      const dataURL = 'data:image/' + (isPng ? 'png' : 'jpeg') + ';base64,' + base64;
+      const dataURL =
+        'data:image/' + (isPng ? 'png' : 'jpeg') + ';base64,' + base64;
 
       // Call the callback function
       callback(dataURL);
