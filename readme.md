@@ -7,7 +7,7 @@ I recommend [Violentmonkey](https://violentmonkey.github.io/) for managing users
 A userscript that autofills printed media details from Bookwalker and Anilist on [AnimeBytes](https://animebytes.tv/).
 
 ### Features
-- Autofill details from Bookwalker using the product link
+- Autofill details from Bookwalker using the product link or by searching for the title
 - Autofill details from Anilist using the manga/LN link or by searching for the title
 
 ### Usage
