@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.3
+// @version     1.4
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -258,7 +258,7 @@ async function searchBookwalker(query) {
     return {
       title: titleAnchor.title,
       url: titleAnchor.href,
-      imageUrl: book.querySelector('div.m-thumb img').src,
+      imageUrl: book.querySelector('div.m-thumb img').dataset.original,
     };
   });
 }
