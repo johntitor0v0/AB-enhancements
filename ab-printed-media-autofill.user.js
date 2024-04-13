@@ -42,7 +42,7 @@ const addCSS = /* css */ `
   color: white !important;
 }
 
-#anilistModal-content {
+#booksModal-content {
   display: grid;
   grid-template-columns: repeat(auto-fill, 230px);
   grid-template-rows: repeat(auto-fill, 322px);
@@ -160,16 +160,16 @@ function setUpModal() {
   document.body.insertAdjacentHTML(
     'beforeend' /* html */,
     `
-<div class="modal micromodal-slide" id="anilistModal" aria-hidden="true">
+<div class="modal micromodal-slide" id="booksModal" aria-hidden="true">
   <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-    <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="anilistModal-title">
+    <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="booksModal-title">
       <header class="modal__header">
-        <h2 class="modal__title" id="anilistModal-title">
+        <h2 class="modal__title" id="booksModal-title">
           <!-- Add title -->
         </h2>
         <button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
       </header>
-      <main class="modal__content" id="anilistModal-content">
+      <main class="modal__content" id="booksModal-content">
         <!-- Add content -->
       </main>
     </div>
@@ -195,8 +195,7 @@ async function autofillBookwalkerInfo(tab) {
 
   const { volumeURL, title } = await getVolumeURLAndTitle(formInput);
   if (!volumeURL) {
-    autofillDiv.innerHTML = 'Invalid URL or series!';
-    return;
+    // Make modal
   }
 
   autofillDiv.innerHTML = `Getting info from ${volumeURL}...`;
@@ -295,8 +294,8 @@ async function autofillAnilistInfo(tab) {
       // Show modal to choose proper title
       autofillDiv.innerHTML = `Found ${results.length} results for ${autofillString}!`;
 
-      const modalTitle = document.querySelector('#anilistModal-title');
-      const modalContent = document.querySelector('#anilistModal-content');
+      const modalTitle = document.querySelector('#booksModal-title');
+      const modalContent = document.querySelector('#booksModal-content');
 
       modalTitle.innerHTML = `Select a result for ${autofillString}`;
 
@@ -324,11 +323,11 @@ async function autofillAnilistInfo(tab) {
         resultDiv.addEventListener('click', () => {
           console.log(`Autofilling from Anilist ID ${result.id}...`);
           autoFillAnilistFromID(tab, result.id, autofillDiv);
-          MicroModal.close('anilistModal');
+          MicroModal.close('booksModal');
         });
       }
 
-      MicroModal.show('anilistModal');
+      MicroModal.show('booksModal');
     }
   }
 }
