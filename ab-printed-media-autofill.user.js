@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.1
+// @version     1.4.2
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -584,12 +584,12 @@ async function getBookwalkerSeriesInfo(url) {
   [
     ...doc.querySelector('.o-contents-section__body .m-tile-list').children,
   ].forEach((book) => {
-    let em = book.querySelector('p a[href]');
-    if (em) bookURLs.unshift(em.href);
-    else {
-      em = book.querySelector('div');
-      if (em.dataset.url) bookURLs.unshift(em.dataset.url);
-    }
+    let em = book.querySelector('p a[href].m-book-item__title');
+    // Return if no title link
+    if (!em) return;
+    // Return if no add to cart (to filter out tokutens and stuff)
+    if (!book.querySelector('.a-icon-btn--cart')) return;
+    bookURLs.unshift(em.href);
   });
 
   return {
