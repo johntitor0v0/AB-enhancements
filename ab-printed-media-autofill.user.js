@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4
+// @version     1.4.1
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -522,26 +522,41 @@ async function getBookwalkerPageInfo(url) {
   const releaseYear = releaseDate ? releaseDate.getFullYear() : null;
 
   // Get the cover image
-  // Get the content attribute of the meta tag with property "og:image"
-  const metaTag = bookwalkerPage.querySelector('meta[property="og:image"]');
-  const metaTagContent = metaTag.getAttribute('content');
+  let coverURL = '';
+  // Get slug from url
+  // Ex. https://bookwalker.jp/decc703038-3d4b-436c-9eab-0a9fffcad894/
+  const slug = url.split('bookwalker.jp/')[1].split('/')[0];
 
-  // Split the content string by '/' and get the 4th part
-  const metaTagContentSplit = metaTagContent.split('/');
-  const metaTagContentPart = metaTagContentSplit[3];
-
-  // Reverse the 4th part of the content string
-  const metaTagContentPartReversed = metaTagContentPart
-    .split('')
-    .reverse()
-    .join('');
-
-  // Convert the reversed 4th part of the content string to integer and subtract 1
-  const imageNumber = parseInt(metaTagContentPartReversed) - 1;
-
-  // Concatenate all parts to form the final URL
-  const coverURL = 'https://c.bookwalker.jp/coverImage_' + imageNumber + '.jpg';
-  // TODO: fix for nan imagenumbers
+  // Check if slug starts with de and strip it
+  if (slug.startsWith('de')) {
+    const UUID = slug.slice(2);
+    const APIUrl = `https://member-app.bookwalker.jp/api/books/updates?fileType=EPUB&${UUID}=0`;
+    try {
+      const data = await new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+          method: 'GET',
+          url: APIUrl,
+          onload: function (response) {
+            if (response.status === 200) {
+              const data = JSON.parse(response.responseText);
+              resolve(data);
+            } else {
+              reject(
+                new Error(`Request failed with status ${response.status}`)
+              );
+            }
+          },
+          onerror: reject,
+        });
+      });
+      if (data.length <= 0) {
+        throw new Error(`No data found for URL ${APIUrl}`);
+      }
+      coverURL = data[0].coverImageUrl;
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return {
     title,
