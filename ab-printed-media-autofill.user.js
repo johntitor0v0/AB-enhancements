@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.2
+// @version     1.4.3
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -308,16 +308,15 @@ async function autofillFromBookwalkerURL(
     autofillDiv.innerHTML = 'Invalid URL!';
     return;
   }
-  title = title || volumeData.title;
-  const releaseYear = volumeData.releaseYear;
-  const coverURL = volumeData.coverURL;
-  const summary = volumeData.summary;
+  title = volumeData.title || title;
+  const { releaseYear, coverURL, summary, reading } = volumeData;
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
   submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
 
   autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>!
+  <br>Reading: ${reading}
   <br>This title first released <span style="color: red;">${volumeData.dateString}</span>!`;
 }
 
@@ -496,9 +495,11 @@ async function getBookwalkerPageInfo(url) {
   // Get the HTML of the page
   const bookwalkerPage = await getDocumentFromURL(url);
 
-  // Get the title
-  const titleElem = bookwalkerPage.querySelector('.p-main__title');
-  const title = titleElem.textContent.trim();
+  // // Get the title
+  // const titleElem = bookwalkerPage.querySelector('.p-main__title');
+  // const title = titleElem.textContent.trim();
+  let title = '';
+  let reading = '';
 
   // Get the synopsis
   const summaryBodyElement = bookwalkerPage.getElementById(
@@ -553,6 +554,8 @@ async function getBookwalkerPageInfo(url) {
         throw new Error(`No data found for URL ${APIUrl}`);
       }
       coverURL = data[0].coverImageUrl;
+      title = data[0].productName;
+      reading = data[0].productNameKana;
     } catch (error) {
       console.error(error);
     }
@@ -564,6 +567,7 @@ async function getBookwalkerPageInfo(url) {
     releaseYear,
     dateString,
     coverURL,
+    reading,
   };
 }
 
