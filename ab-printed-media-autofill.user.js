@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.3
+// @version     1.4.4
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -94,7 +94,35 @@ const addCSS = /* css */ `
 
   GM_addStyle(addCSS);
   setUpAutofillForm();
+  setUpWatchTorrentInput();
 })();
+
+function setUpWatchTorrentInput() {
+  const torrentInput =
+    document.getElementById('file_input_light_novels') ??
+    document.getElementById('file_input_manga');
+  torrentInput.addEventListener('change', () => {
+    const fileName = torrentInput.files[0].name;
+    const torrentName = fileName.replace(/\.[^/.]+$/, '');
+
+    // Clean out .epub, .zip, .cbz from end of filename
+    const cleanName = torrentName.replace(/\.(epub|zip|cbz)$/i, '');
+
+    console.log('Torrent name:', torrentName);
+
+    const inputs = [
+      ...document.querySelectorAll(
+        '#bookwalker_autofill, #anilist_autofill'
+      ),
+    ];
+
+    inputs.forEach((input) => {
+      input.value = cleanName;
+    });
+
+    console.log('Autofilled from torrent name:', cleanName);
+  });
+}
 
 /**
  * Adds new autofill options to the upload form
