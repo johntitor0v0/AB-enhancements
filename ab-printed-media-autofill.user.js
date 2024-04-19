@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.5
+// @version     1.4.6
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -341,7 +341,7 @@ async function autofillFromBookwalkerURL(
 
   submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>!
+  autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>
   <br>Reading: ${reading}
   <br>${volumeData.authorInfo}
   <br>This title first released <span style="color: red;">${volumeData.dateString}</span>!`;
@@ -435,7 +435,8 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 
   submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
 
-  autofillDiv.innerHTML = `Autofilled info about ${title}!`;
+  autofillDiv.innerHTML = `Autofilled info about <a href="https://anilist.co/manga/${anilistID}">${title}</a>
+${title}!`;
   if (status)
     autofillDiv.innerHTML += `<br>This series is <span style="color: red;">${status}</span>!`;
 }
