@@ -32,6 +32,55 @@ input[type="text"] {
   gap: 0.5rem;
 }
 
+/* Buttons */
+input[type="button"],input[type="submit"] {
+  background: #555;
+  font-weight: bold;
+}
+
+/* File selector */
+input[type="file"] {
+  padding: 12px 20px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  cursor: pointer;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+input[type="file"]:hover {
+  border-color: #888;
+  background-color: #e8e8e8;
+}
+
+input[type="file"]:focus {
+  outline: none;
+  border-color: #666;
+  background-color: #fff;
+}
+
+input[type="file"]::file-selector-button {
+  font-weight: bold;
+  color: #fff;
+  background-color: #555;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background-color: #555;
+}
+
+input[type="file"]:drop {
+  border-color: #4caf50;
+  background-color: #e8f5e9;
+}
+
 /* Container styles */
 .chip-container {
   display: flex;
@@ -42,21 +91,21 @@ input[type="text"] {
 
 /* Chip styles */
 .chip {
-  background-color: #fff0ff;
+  background-color: white;
   border-radius: 12px;
   padding: 6px 12px;
   font-size: 12px;
-  color: #542a54;
+  color: #555;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  border: 1px solid #ffddff;
+  border: 1px solid #ccc;
   text-align: center;
   font-weight: 600;
 }
 
 /* Hover effect */
 .chip:hover {
-  background-color: #ffddff;
+  background-color: #eeeeee;
 }
 
 /* Selected chip */
