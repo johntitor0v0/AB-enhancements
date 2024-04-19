@@ -37,25 +37,26 @@ input[type="text"] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 /* Chip styles */
 .chip {
-  background-color: white;
+  background-color: #fff0ff;
   border-radius: 12px;
   padding: 6px 12px;
   font-size: 12px;
-  color: #333;
+  color: #542a54;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  border: 1px solid #ccc;
+  border: 1px solid #ffddff;
   text-align: center;
+  font-weight: 600;
 }
 
 /* Hover effect */
 .chip:hover {
-  background-color: #e0e0e0;
+  background-color: #ffddff;
 }
 
 /* Selected chip */
@@ -84,7 +85,7 @@ function convertSelectsToInputChips() {
     const parent = select.parentElement;
     const chipContainer = document.createElement('div');
     chipContainer.className = 'chip-container';
-    parent.appendChild(chipContainer);
+    parent.prepend(chipContainer);
 
     const options = [...select.options];
     for (const option of options) {
