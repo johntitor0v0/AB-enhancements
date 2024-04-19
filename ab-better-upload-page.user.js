@@ -2,7 +2,7 @@
 // @name        AB Better Upload Page
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.0.0
+// @version     1.0.1
 // @author      Marv
 // @description Improves styling and functionality of the AB upload page
 // @grant       GM_addStyle
@@ -110,9 +110,8 @@ input[type="file"]:drop {
 
 /* Selected chip */
 .chip.selected {
-  background-color: lightpink;
-  color: darkred;
-  border: 1px solid lightcoral;
+  background-color: #555;
+  color: white;
 }
 `;
 
