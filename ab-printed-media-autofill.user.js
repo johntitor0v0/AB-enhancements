@@ -106,7 +106,12 @@ function setUpWatchTorrentInput() {
     const torrentName = fileName.replace(/\.[^/.]+$/, '');
 
     // Clean out .epub, .zip, .cbz from end of filename
-    const cleanName = torrentName.replace(/\.(epub|zip|cbz)$/i, '');
+    let cleanName = torrentName.replace(/\.(epub|zip|cbz)$/i, '');
+
+    const removeRegexes = [/【FANZA限定版】$/];
+    for (const regex of removeRegexes) {
+      cleanName = cleanName.replace(regex, '');
+    }
 
     console.log('Torrent name:', torrentName);
 
