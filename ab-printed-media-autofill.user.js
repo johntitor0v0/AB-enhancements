@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.4
+// @version     1.4.5
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -111,9 +111,7 @@ function setUpWatchTorrentInput() {
     console.log('Torrent name:', torrentName);
 
     const inputs = [
-      ...document.querySelectorAll(
-        '#bookwalker_autofill, #anilist_autofill'
-      ),
+      ...document.querySelectorAll('#bookwalker_autofill, #anilist_autofill'),
     ];
 
     inputs.forEach((input) => {
@@ -345,6 +343,7 @@ async function autofillFromBookwalkerURL(
 
   autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>!
   <br>Reading: ${reading}
+  <br>${volumeData.authorInfo}
   <br>This title first released <span style="color: red;">${volumeData.dateString}</span>!`;
 }
 
@@ -589,6 +588,10 @@ async function getBookwalkerPageInfo(url) {
     }
   }
 
+  const authorInfo = [...bookwalkerPage.querySelector('.p-author').children]
+    .map((elem) => elem.innerText.trim())
+    .join('; ');
+
   return {
     title,
     summary,
@@ -596,6 +599,7 @@ async function getBookwalkerPageInfo(url) {
     dateString,
     coverURL,
     reading,
+    authorInfo,
   };
 }
 
