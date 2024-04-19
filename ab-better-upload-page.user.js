@@ -23,6 +23,8 @@ input[type="checkbox"]:hover {
 /* Input Box taller */
 input[type="text"] {
   height: 1.5rem;
+  padding: 0.25rem;
+  font-size: 1rem;
 }
 
 /* checkbox flex div */
