@@ -25,6 +25,7 @@ input[type="text"] {
   height: 1.5rem;
   padding: 0.25rem;
   font-size: 1rem;
+  max-width: 100%;
 }
 
 /* checkbox flex div */
@@ -122,7 +123,26 @@ input[type="file"]:drop {
 
   fixCheckboxStyles();
   convertSelectsToInputChips();
+  makeInputsExpand();
 })();
+
+/**
+ * Makes the input boxes expand when the text is too long
+ */
+function makeInputsExpand() {
+  const inputs = [...document.querySelectorAll('input[type="text"]')];
+  for (const input of inputs) {
+    const resize = () => {
+      input.style.width = 'auto';
+      input.style.width = `${input.scrollWidth}px`;
+    };
+    resize();
+    input.addEventListener('input', resize);
+    input.addEventListener('change', resize);
+    input.addEventListener('focus', resize);
+    setInterval(resize, 200);
+  }
+}
 
 /**
  * Converts the selects to input chips by hiding the select and adding a chip for each option that is selected
