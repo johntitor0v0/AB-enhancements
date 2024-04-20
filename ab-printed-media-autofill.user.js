@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.8
+// @version     1.4.9
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -240,6 +240,11 @@ async function autofillBookwalkerInfo(tab) {
     const results = await searchBookwalker(formInput);
     // Show modal to choose proper title
     autofillDiv.innerHTML = `Found ${results.length} results for ${formInput}!`;
+
+    if (results.length < 1) {
+      autofillDiv.innerHTML = `No results found for ${formInput}!`;
+      return;
+    }
 
     const modalTitle = document.querySelector('#booksModal-title');
     const modalContent = document.querySelector('#booksModal-content');
