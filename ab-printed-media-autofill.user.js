@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.7
+// @version     1.4.8
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -21,7 +21,15 @@ const mangaTab = document.getElementById('manga');
 const tabs = [lightNovelsTab, mangaTab];
 
 const addCSS = /* css */ `
-/* mostly stolen from Anilist with adjustments */
+/* Feedback stuff */
+
+#auto_bookwalker, #auto_anilist {
+  font-size: 1.25rem;
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
+/* mostly stolen from Anilist with adjustments for modal stuff */
 :root {
   --color-overlay: 49,31,47;
   --color-background: 11,22,34;
@@ -244,7 +252,9 @@ async function autofillBookwalkerInfo(tab) {
     for (const result of results) {
       modalContentHTML += `
     <div class="anilistResult" data-id="${result.title}">
-      <img class="anilistImage" />
+      <a href="${result.url}" target="_blank" onclick="event.preventDefault();">
+        <img class="anilistImage" />
+      </a>
       <div class="anilistTitle">${result.title}</div>
     </div>
     `;
@@ -260,11 +270,11 @@ async function autofillBookwalkerInfo(tab) {
         image.src = dataURL;
       });
       resultDiv.addEventListener('click', async () => {
+        MicroModal.close('booksModal');
         console.log(`Autofilling from Bookwalker URL ${result.url}...`);
         autofillDiv.innerHTML = `Autofilling from Bookwalker URL ${result.url}...`;
         const { volumeURL, title } = await getVolumeURLAndTitle(result.url);
         autofillFromBookwalkerURL(tab, volumeURL, autofillDiv, title);
-        MicroModal.close('booksModal');
       });
     }
 
