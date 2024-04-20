@@ -117,6 +117,36 @@ input[type="file"]:drop {
   background-color: #555;
   color: white;
 }
+
+/* Multi Torrent Upload */
+.multi-torrent-upload-container {
+  width: max-content;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.multi-torrent-input {
+  display: none;
+}
+
+.multi-torrent-upload-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.multi-torrent-upload-button:hover {
+  background-color: #0056b3;
+}
 `;
 
 (() => {
@@ -125,7 +155,51 @@ input[type="file"]:drop {
   fixCheckboxStyles();
   convertSelectsToInputChips();
   makeInputsExpand();
+  setUpMultiTorrentUpload();
 })();
+
+/**
+ * Sets up the multi-torrent upload functionality
+ * It adds a new file input that accepts multiple files
+ * If the user selects multiple files, it will open a new tab for each file
+ */
+function setUpMultiTorrentUpload() {
+  const inputs = [...document.querySelectorAll('input[name="file_input"]')];
+  for (const input of inputs) {
+    // Set up input
+    const originalInputId = input.id;
+
+    // Type of upload id
+    const tab = originalInputId.split('file_input_')[1];
+
+    const inputHTML = /* html */ `
+    <div class="multi-torrent-upload-container">
+      <input type="file" class="multi-torrent-input" id="multi-torrent-input-${tab}" multiple data-original-input-id="${originalInputId}" />
+      <div class="multi-torrent-upload-button">Multi Torrent Upload</div>
+    </div>
+    `;
+    input.insertAdjacentHTML('afterend', inputHTML);
+
+    const multiInput = document.getElementById('multi-torrent-input-' + tab);
+    multiInput.parentElement.addEventListener('click', () => {
+      multiInput.click();
+    });
+
+    multiInput.addEventListener('change', async (event) => {
+      const files = event.target.files;
+      // wait 100ms for the files to be added to the input
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      for (const file of files) {
+        const newTab = window.open(`https://animebytes.tv/upload.php#${tab}`);
+        newTab.onload = () => {
+          const newInput = newTab.document.getElementById(originalInputId);
+          newInput.files = [file];
+        };
+      }
+    });
+  }
+}
 
 /**
  * Makes the input boxes expand when the text is too long
@@ -143,6 +217,7 @@ function makeInputsExpand() {
     input.addEventListener('focus', resize);
     setInterval(resize, 200);
   }
+  console.log('Inputs expanded');
 }
 
 /**
