@@ -180,22 +180,36 @@ function setUpMultiTorrentUpload() {
     `;
     input.insertAdjacentHTML('afterend', inputHTML);
 
+    /**
+     * @type {HTMLInputElement}
+     */
     const multiInput = document.getElementById('multi-torrent-input-' + tab);
     multiInput.parentElement.addEventListener('click', () => {
       multiInput.click();
     });
 
     multiInput.addEventListener('change', async (event) => {
+      /**
+       * @type {FileList}
+       */
       const files = event.target.files;
       // wait 100ms for the files to be added to the input
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       for (const file of files) {
         const newTab = window.open(`https://animebytes.tv/upload.php#${tab}`);
-        newTab.onload = () => {
-          const newInput = newTab.document.getElementById(originalInputId);
-          newInput.files = [file];
-        };
+        console.log('New tab opened for file:', file.name);
+        newTab.addEventListener('load', () => {
+          /**
+           * @type {HTMLInputElement}
+           */
+          const filePicker = newTab.document.getElementById(originalInputId);
+          const newFiles = new DataTransfer();
+          newFiles.items.add(file);
+          filePicker.files = newFiles.files;
+          filePicker.dispatchEvent(new Event('change', { bubbles: true }));
+          console.log('File added to new tab:', file.name);
+        });
       }
     });
   }
