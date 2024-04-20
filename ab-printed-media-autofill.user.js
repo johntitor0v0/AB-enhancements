@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.6
+// @version     1.4.7
 // @author      Marv
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
@@ -98,32 +98,35 @@ const addCSS = /* css */ `
 })();
 
 function setUpWatchTorrentInput() {
-  const torrentInput =
-    document.getElementById('file_input_light_novels') ??
-    document.getElementById('file_input_manga');
-  torrentInput.addEventListener('change', () => {
-    const fileName = torrentInput.files[0].name;
-    const torrentName = fileName.replace(/\.[^/.]+$/, '');
+  const torrentInputs = [
+    document.getElementById('file_input_light_novels'),
+    document.getElementById('file_input_manga'),
+  ];
+  torrentInputs.forEach((torrentInput) => {
+    torrentInput.addEventListener('change', () => {
+      const fileName = torrentInput.files[0].name;
+      const torrentName = fileName.replace(/\.[^/.]+$/, '');
 
-    // Clean out .epub, .zip, .cbz from end of filename
-    let cleanName = torrentName.replace(/\.(epub|zip|cbz)$/i, '');
+      // Clean out .epub, .zip, .cbz from end of filename
+      let cleanName = torrentName.replace(/\.(epub|zip|cbz)$/i, '');
 
-    const removeRegexes = [/【FANZA限定版】$/];
-    for (const regex of removeRegexes) {
-      cleanName = cleanName.replace(regex, '');
-    }
+      const removeRegexes = [/【FANZA限定版】$/];
+      for (const regex of removeRegexes) {
+        cleanName = cleanName.replace(regex, '');
+      }
 
-    console.log('Torrent name:', torrentName);
+      console.log('Torrent name:', torrentName);
 
-    const inputs = [
-      ...document.querySelectorAll('#bookwalker_autofill, #anilist_autofill'),
-    ];
+      const inputs = [
+        ...document.querySelectorAll('#bookwalker_autofill, #anilist_autofill'),
+      ];
 
-    inputs.forEach((input) => {
-      input.value = cleanName;
+      inputs.forEach((input) => {
+        input.value = cleanName;
+      });
+
+      console.log('Autofilled from torrent name:', cleanName);
     });
-
-    console.log('Autofilled from torrent name:', cleanName);
   });
 }
 
