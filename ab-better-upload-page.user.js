@@ -2,7 +2,7 @@
 // @name        AB Better Upload Page
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.1.0
+// @version     1.1.1
 // @author      Marv
 // @description Improves styling and functionality of the AB upload page
 // @grant       GM_addStyle
@@ -175,7 +175,7 @@ function setUpMultiTorrentUpload() {
     const inputHTML = /* html */ `
     <div class="multi-torrent-upload-container">
       <input type="file" class="multi-torrent-input" id="multi-torrent-input-${tab}" multiple data-original-input-id="${originalInputId}" />
-      <div class="multi-torrent-upload-button">Multi Torrent Upload</div>
+      <div class="multi-torrent-upload-button">Multi Torrent Upload (up to 20 a time because of the site ratelimit)</div>
     </div>
     `;
     input.insertAdjacentHTML('afterend', inputHTML);
