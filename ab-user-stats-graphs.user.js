@@ -15,7 +15,7 @@
 // @grant       GM.getValue
 // ==/UserScript==
 
-const DELAY_MS = 505;
+const DELAY_MS = 5055;
 
 const ADD_CSS = /* css */ `
 .micromodal-slide {
@@ -168,7 +168,7 @@ const ADD_CSS = /* css */ `
 
       const cacheKey = `${userid}-${choice}-stats`;
       /**
-       * @type {Array<{name: string, uploaded: number}>}
+       * @type {Array<{name: string, dateval: number}>}
        */
       const stats = await GM.getValue(cacheKey, []);
       console.log('Cached stats:', stats);
@@ -194,16 +194,16 @@ const ADD_CSS = /* css */ `
         'ab-user-stats-graphs-modal-title'
       ).textContent = `${username}'s ${choiceName} Stats`;
 
-      // Get amount of torrents uploaded per day as well as the total cumulative amount of torrents at that day
+      // Get amount of torrents uploaded/grabbed per day as well as the total cumulative amount of torrents at that day
       /**
        * @type {Map<number, {count: number, total: number}>}
        */
       const statsMap = new Map(); // date -> {count, total}
       let total = 0;
       stats
-        .sort((a, b) => a.uploaded - b.uploaded)
+        .sort((a, b) => a.dateval - b.dateval)
         .forEach((stat) => {
-          const date = new Date(stat.uploaded);
+          const date = new Date(stat.dateval);
           const day = new Date(
             date.getFullYear(),
             date.getMonth(),
@@ -233,7 +233,7 @@ const ADD_CSS = /* css */ `
               ),
             ],
             [
-              'Torrents Uploaded',
+              `Torrents ${choiceName}`,
               ...Array.from(statsMap.values()).map((stat) => stat.total),
             ],
           ],
@@ -248,7 +248,7 @@ const ADD_CSS = /* css */ `
           },
         },
         title: {
-          text: 'Cumulative Torrents Uploaded',
+          text: `Cumulative Torrents ${choiceName}`,
         },
       });
       ('block');
@@ -266,7 +266,7 @@ const ADD_CSS = /* css */ `
               ),
             ],
             [
-              'Torrents Uploaded',
+              `Daily Torrents ${choiceName}`,
               ...Array.from(statsMap.values()).map((stat) => stat.count),
             ],
           ],
@@ -281,7 +281,7 @@ const ADD_CSS = /* css */ `
           },
         },
         title: {
-          text: 'Daily Torrents Uploaded',
+          text: `Daily Torrents ${choiceName}`,
         },
       });
     });
@@ -329,9 +329,9 @@ async function getStatsForPage(userid, page, type) {
     const name = nameAnchor?.textContent || '';
 
     const timeSpan = row.querySelector('td:nth-child(4) > span');
-    const timeUploaded = timeSpan ? timeSpan.getAttribute('title') : 0;
-    const uploaded = new Date(timeUploaded).getTime();
+    const datestring = timeSpan ? timeSpan.getAttribute('title') : 0;
+    const dateval = new Date(datestring).getTime();
 
-    return { name, uploaded };
+    return { name, dateval };
   });
 }
