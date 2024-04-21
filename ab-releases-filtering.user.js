@@ -3,8 +3,9 @@
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/torrents.php*
 // @grant       none
-// @version     1.3
-// @author      -
+// @version     1.3.1
+// @author      Marv
+// @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Filters out torrents based on desired options
 // @grant       GM_addStyle
 // ==/UserScript==

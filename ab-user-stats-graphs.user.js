@@ -2,8 +2,9 @@
 // @name        AB User Stats Graphs
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/user.php*
-// @version     1.0
+// @version     1.0.1
 // @author      Marv
+// @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Generate graphs for user stats like torrents uploaded.
 // @require     https://unpkg.com/micromodal@0.4.10/dist/micromodal.js
 // @require     https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js
@@ -282,6 +283,7 @@ const ADD_CSS = /* css */ `
         });
 
       console.log('Stats map:', statsMap);
+
       // c3 time chart
       const cumulativeChart = c3.generate({
         bindto: '#ab-user-stats-graph-cumulative',

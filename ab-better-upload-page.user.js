@@ -2,8 +2,9 @@
 // @name        AB Better Upload Page
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.1.1
+// @version     1.1.2
 // @author      Marv
+// @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Improves styling and functionality of the AB upload page
 // @grant       GM_addStyle
 // ==/UserScript==

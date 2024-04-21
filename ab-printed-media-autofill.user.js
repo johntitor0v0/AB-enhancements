@@ -2,8 +2,9 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.9
+// @version     1.4.10
 // @author      Marv
+// @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Autofills printed media details from Bookwalker
 // @grant       GM_xmlhttpRequest
 // @grant       GM_addStyle
