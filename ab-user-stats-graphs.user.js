@@ -6,11 +6,16 @@
 // @author      Marv
 // @description Generate graphs for user stats like torrents uploaded.
 // @require     https://unpkg.com/micromodal@0.4.10/dist/micromodal.js
+// @require     https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js
+// @require     https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js
+// @resource    c3CSS https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css
 // @grant       GM.addStyle
 // @grant       GM.getResourceText
+// @grant       GM.setValue
+// @grant       GM.getValue
 // ==/UserScript==
 
-const DELAY_MS = '5055';
+const DELAY_MS = 505;
 
 const ADD_CSS = /* css */ `
 .micromodal-slide {
@@ -110,6 +115,7 @@ const ADD_CSS = /* css */ `
   // Add CSS
   GM.addStyle(GM.getResourceText('microModalCSS'));
   GM.addStyle(ADD_CSS);
+  GM.addStyle(GM.getResourceText('c3CSS'));
 
   // Create modal
   document.body.insertAdjacentHTML(
@@ -132,6 +138,7 @@ const ADD_CSS = /* css */ `
               <label for="snatched">Snatched</label>
             </div>
             <button id="generate-button" class="primary-button">Generate</button>
+            <div id="ab-user-stats-graph" style="display: none;"></div>
           </main>
         </div>
       </div>`
@@ -143,19 +150,52 @@ const ADD_CSS = /* css */ `
     .addEventListener('click', async () => {
       const choice = document.querySelector('input[name="choice"]:checked').id;
       const userid = new URLSearchParams(window.location.search).get('id');
+
+      const cacheKey = `${userid}-${choice}-stats`;
       /**
-       * @type {Array<{name: string, uploaded: Date}>}
+       * @type {Array<{name: string, uploaded: number}>}
        */
-      const stats = [];
-      // Iterate upwards until no more torrents are found
-      let page = 1;
-      while (true) {
-        const newStats = await getStatsForPage(userid, page, choice);
-        if (newStats.length === 0) break;
-        stats.push(...newStats);
-        page++;
-        await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+      const stats = await GM.getValue(cacheKey, []);
+      console.log('Cached stats:', stats);
+      if (stats.length === 0) {
+        // Iterate upwards until no more torrents are found
+        let page = 1;
+        while (true) {
+          console.log('Fetching page', page);
+          const newStats = await getStatsForPage(userid, page, choice);
+          if (newStats.length === 0) break;
+          console.log('Found', newStats.length, 'torrents');
+          stats.push(...newStats);
+          page++;
+          await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+        }
+        await GM.setValue(cacheKey, stats);
       }
+
+      // c3 time chart
+      const chart = c3.generate({
+        bindto: '#ab-user-stats-graph',
+        data: {
+          x: 'x',
+          columns: [
+            [
+              'x',
+              ...stats.map((stat) =>
+                new Date(stat.uploaded).toLocaleDateString()
+              ),
+            ],
+            ['data', ...stats.map((stat) => 1)],
+          ],
+        },
+        axis: {
+          x: {
+            type: 'timeseries',
+            tick: {
+              format: '%Y-%m-%d',
+            },
+          },
+        },
+      });
     });
 
   // Add generate graph button
@@ -202,7 +242,7 @@ async function getStatsForPage(userid, page, type) {
 
     const timeSpan = row.querySelector('td:nth-child(4) > span');
     const timeUploaded = timeSpan ? timeSpan.getAttribute('title') : 0;
-    const uploaded = new Date(timeUploaded);
+    const uploaded = new Date(timeUploaded).getTime();
 
     return { name, uploaded };
   });
