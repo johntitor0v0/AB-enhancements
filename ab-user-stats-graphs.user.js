@@ -15,7 +15,7 @@
 // @grant       GM.getValue
 // ==/UserScript==
 
-const DELAY_MS = 5055;
+const DELAY_MS = 500;
 
 const ADD_CSS = /* css */ `
 .micromodal-slide {
@@ -201,37 +201,49 @@ const ADD_CSS = /* css */ `
 
       const cacheKey = `${userid}-${choice}-stats`;
       /**
-       * @type {Array<{name: string, dateval: number}>}
+       * @type {Object<string, number>}
        */
-      const stats = await GM.getValue(cacheKey, []);
+      let stats = await GM.getValue(cacheKey, {});
       console.log('Cached stats:', stats);
-      if (stats.length === 0) {
-        // Iterate upwards until no more torrents are found
-        let page = 1;
-        while (true) {
-          console.log('Fetching page', page);
-          const { entries: newStats, lastPage } = await getStatsForPage(
-            userid,
-            page,
-            choice
-          );
-          if (newStats.length === 0) break;
-          console.log('Found', newStats.length, 'torrents');
-          stats.push(...newStats);
+      // Find latest torrent date
+      const latestDate = Math.max(...Object.values(stats), 0);
+      console.log('Latest date scraped:', new Date(latestDate));
 
-          // Update progress bar
-          const progress = Math.min((page / lastPage) * 100, 100).toFixed(2);
-          document.getElementById('ab-user-stats-graphs-progress').value =
-            progress;
-          document.getElementById(
-            'ab-user-stats-graphs-progress-text'
-          ).textContent = `Fetching page ${page} of ${lastPage} (${progress}%)`;
+      // Iterate upwards until date past latest date or no new torrents
+      let page = 1;
+      while (true) {
+        console.log('Fetching page', page);
+        const { entries: newStats, lastPage } = await getStatsForPage(
+          userid,
+          page,
+          choice
+        );
+        const newTorrentsFound = Object.keys(newStats).length;
+        // Stop if no new torrents
+        if (newTorrentsFound === 0) break;
+        console.log('Found', newTorrentsFound, 'torrents');
 
-          page++;
-          await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
-        }
-        await GM.setValue(cacheKey, stats);
+        // Add new stats to existing stats
+        stats = { ...stats, ...newStats };
+
+        // Stop if any torrent is older than the latest date
+        if (Object.values(newStats).some((date) => date < latestDate)) break;
+
+        // Stop if reached last page
+        if (page >= lastPage) break;
+
+        // Update progress bar
+        const progress = Math.min((page / lastPage) * 100, 100).toFixed(2);
+        document.getElementById('ab-user-stats-graphs-progress').value =
+          progress;
+        document.getElementById(
+          'ab-user-stats-graphs-progress-text'
+        ).textContent = `Fetching page ${page} of ${lastPage} (${progress}%)`;
+
+        page++;
+        await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
       }
+      await GM.setValue(cacheKey, stats);
 
       // Done fetching, make graphs
       // Hide progress
@@ -250,10 +262,11 @@ const ADD_CSS = /* css */ `
        */
       const statsMap = new Map(); // date -> {count, total}
       let total = 0;
-      stats
-        .sort((a, b) => a.dateval - b.dateval)
-        .forEach((stat) => {
-          const date = new Date(stat.dateval);
+
+      Object.entries(stats)
+        .sort(([, aVal], [, bVal]) => aVal - bVal)
+        .forEach(([, dateVal]) => {
+          const date = new Date(dateVal);
           const day = new Date(
             date.getFullYear(),
             date.getMonth(),
@@ -377,18 +390,27 @@ async function getStatsForPage(userid, page, type) {
     ...document.querySelectorAll('table.torrent_table > tbody > tr.torrent'),
   ];
   return {
-    entries: rows.map((row) => {
-      const nameAnchor = row.querySelector(
-        'td:nth-child(2) > a[href^="/series.php?id="]'
-      );
-      const name = nameAnchor?.textContent || '';
+    /**
+     * @type {Object<string, number>}
+     */
+    entries: rows.reduce((map, row) => {
+      // const nameAnchor = row.querySelector(
+      //   'td:nth-child(2) > a[href^="/series.php?id="]'
+      // );
+      // const name = nameAnchor?.textContent || '';
+      // <a href="torrents.php?id=91109&amp;torrentid=1112035" title="View Torrent">Light Novel</a>
+      const torrentAnchor = row.querySelector('a[title="View Torrent"]');
+      const torrentID = torrentAnchor
+        ? torrentAnchor.getAttribute('href').split('torrentid=')[1]
+        : '';
 
       const timeSpan = row.querySelector('td:nth-child(4) > span');
       const datestring = timeSpan ? timeSpan.getAttribute('title') : 0;
       const dateval = new Date(datestring).getTime();
 
-      return { name, dateval };
-    }),
+      map[torrentID] = dateval;
+      return map;
+    }, {}),
     lastPage,
   };
 }
