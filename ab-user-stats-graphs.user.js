@@ -15,7 +15,7 @@
 // @grant       GM.getValue
 // ==/UserScript==
 
-const DELAY_MS = 500;
+const DELAY_MS = 5055;
 
 const ADD_CSS = /* css */ `
 .micromodal-slide {
@@ -155,7 +155,7 @@ const ADD_CSS = /* css */ `
 
   const userid = new URLSearchParams(window.location.search).get('id');
   // Get user name
-  const username = document.getElementsByClassName('username')[0].textContent;
+  const username = document.querySelector('#content a[href^="/user/profile"]')?.textContent;
 
   // Create modal
   document.body.insertAdjacentHTML(
@@ -163,7 +163,7 @@ const ADD_CSS = /* css */ `
     /* html */ `<div id="ab-user-stats-graphs-modal" class="modal micromodal-slide" aria-hidden="true">
         <div class="modal__overlay" tabindex="-1" data-micromodal-close>
           <main id="ab-user-stats-graphs-modal-content" class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
-            <h2 id="ab-user-stats-graphs-modal-title">Generate Graph</h2>
+            <h2 id="ab-user-stats-graphs-modal-title">Generate Graph for ${username}</h2>
             <div class="choice-chips">
               <input type="radio" id="uploaded" name="choice" value="Uploaded" checked>
               <label for="uploaded">Uploaded</label>
