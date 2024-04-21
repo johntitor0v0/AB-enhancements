@@ -50,7 +50,7 @@ const ADD_CSS = /* css */ `
   border-radius: 10px;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
   width: 80%;
-  max-width: 800px;
+  min-width: 800px;
   margin: 1.75rem auto;
   z-index: 100;
 }
@@ -59,6 +59,12 @@ const ADD_CSS = /* css */ `
   font-size: 1.5rem;
   font-weight: 500;
   margin-bottom: 1rem;
+
+}
+
+.ab-user-stats-graphs {
+  margin: 2rem;
+  display: flex;
 
 }
 
@@ -117,13 +123,18 @@ const ADD_CSS = /* css */ `
   GM.addStyle(ADD_CSS);
   GM.addStyle(GM.getResourceText('c3CSS'));
 
+  const userid = new URLSearchParams(window.location.search).get('id');
+  // Get user name
+  const username = document.getElementsByClassName('username')[0].textContent;
+
+
   // Create modal
   document.body.insertAdjacentHTML(
     'beforeend',
     /* html */ `<div id="ab-user-stats-graphs-modal" class="modal micromodal-slide" aria-hidden="true">
         <div class="modal__overlay" tabindex="-1" data-micromodal-close>
           <main id="ab-user-stats-graphs-modal-content" class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
-            <h2>Generate Graph</h2>
+            <h2 id="ab-user-stats-graphs-modal-title">Generate Graph</h2>
             <div class="choice-chips">
               <input type="radio" id="uploaded" name="choice" value="Uploaded" checked>
               <label for="uploaded">Uploaded</label>
@@ -138,8 +149,10 @@ const ADD_CSS = /* css */ `
               <label for="snatched">Snatched</label>
             </div>
             <button id="generate-button" class="primary-button">Generate</button>
-            <div id="ab-user-stats-graph-cumulative" style="display: none;"></div>
-            <div id="ab-user-stats-graph-daily" style="display: none;"></div>
+            <div class="ab-user-stats-graphs" style="display: none;">
+              <div id="ab-user-stats-graph-cumulative"></div>
+              <div id="ab-user-stats-graph-daily"></div>
+            </div>
           </main>
         </div>
       </div>`
@@ -149,8 +162,9 @@ const ADD_CSS = /* css */ `
   document
     .getElementById('generate-button')
     .addEventListener('click', async () => {
-      const choice = document.querySelector('input[name="choice"]:checked').id;
-      const userid = new URLSearchParams(window.location.search).get('id');
+      const selectedInput = document.querySelector('input[name="choice"]:checked');
+      const choice = selectedInput.id;
+      const choiceName = selectedInput.value;
 
       const cacheKey = `${userid}-${choice}-stats`;
       /**
@@ -172,6 +186,13 @@ const ADD_CSS = /* css */ `
         }
         await GM.setValue(cacheKey, stats);
       }
+
+      // Done fetching, make graphs
+
+      document.querySelector('.ab-user-stats-graphs').style.display = 'block';
+      document.getElementById(
+        'ab-user-stats-graphs-modal-title'
+      ).textContent = `${username}'s ${choiceName} Stats`;
 
       // Get amount of torrents uploaded per day as well as the total cumulative amount of torrents at that day
       /**
@@ -198,12 +219,12 @@ const ADD_CSS = /* css */ `
         });
 
       console.log('Stats map:', statsMap);
-
       // c3 time chart
       const cumulativeChart = c3.generate({
-        bindto: '#ab-user-stats-graph',
+        bindto: '#ab-user-stats-graph-cumulative',
         data: {
           x: 'x',
+          type: 'step',
           columns: [
             [
               'x',
@@ -222,6 +243,7 @@ const ADD_CSS = /* css */ `
             type: 'timeseries',
             tick: {
               format: '%Y-%m-%d',
+              count: 20,
             },
           },
         },
@@ -229,8 +251,8 @@ const ADD_CSS = /* css */ `
           text: 'Cumulative Torrents Uploaded',
         },
       });
-      document.getElementById('ab-user-stats-graph-cumulative').style.display = 'block';
-      
+      ('block');
+
       const dailyChart = c3.generate({
         bindto: '#ab-user-stats-graph-daily',
         data: {
@@ -254,6 +276,7 @@ const ADD_CSS = /* css */ `
             type: 'timeseries',
             tick: {
               format: '%Y-%m-%d',
+              count: 20,
             },
           },
         },
@@ -261,7 +284,6 @@ const ADD_CSS = /* css */ `
           text: 'Daily Torrents Uploaded',
         },
       });
-      document.getElementById('ab-user-stats-graph-daily').style.display = 'block';
     });
 
   // Add generate graph button
