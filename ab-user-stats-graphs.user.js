@@ -168,9 +168,6 @@ const ADD_CSS = /* css */ `
               <input type="radio" id="uploaded" name="choice" value="Uploaded" checked>
               <label for="uploaded">Uploaded</label>
 
-              <input type="radio" id="seeding" name="choice" value="Seeding">
-              <label for="seeding">Seeding</label>
-
               <input type="radio" id="snatched" name="choice" value="Snatched">
               <label for="snatched">Snatched</label>
             </div>
