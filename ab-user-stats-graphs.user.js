@@ -10,6 +10,8 @@
 // @grant       GM.getResourceText
 // ==/UserScript==
 
+const DELAY_MS = '5055';
+
 const ADD_CSS = /* css */ `
 .micromodal-slide {
   display: none;
@@ -136,10 +138,25 @@ const ADD_CSS = /* css */ `
   );
 
   // Generate graph
-  document.getElementById('generate-button').addEventListener('click', () => {
-    const choice = document.querySelector('input[name="choice"]:checked').value.toLowerCase();
-
-  });
+  document
+    .getElementById('generate-button')
+    .addEventListener('click', async () => {
+      const choice = document.querySelector('input[name="choice"]:checked').id;
+      const userid = new URLSearchParams(window.location.search).get('id');
+      /**
+       * @type {Array<{name: string, uploaded: Date}>}
+       */
+      const stats = [];
+      // Iterate upwards until no more torrents are found
+      let page = 1;
+      while (true) {
+        const newStats = await getStatsForPage(userid, page, choice);
+        if (newStats.length === 0) break;
+        stats.push(...newStats);
+        page++;
+        await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+      }
+    });
 
   // Add generate graph button
   [...document.querySelectorAll('h3')]
@@ -159,3 +176,34 @@ const ADD_CSS = /* css */ `
     document.getElementById('ab-user-stats-graphs-modal')
   );
 })();
+
+/**
+ * Retrieves statistics for a specific page of torrents for a given user.
+ *
+ * @param {number} userid - The ID of the user.
+ * @param {number} page - The page number of the torrents.
+ * @param {string} type - The type of torrents.
+ */
+async function getStatsForPage(userid, page, type) {
+  const pageURL = (userID, page, type) =>
+    `https://animebytes.tv/alltorrents.php?page=${page}&userid=${userID}&type=${type}&order_by=time&order_way=DESC`;
+  const response = await fetch(pageURL(userid, page, type));
+  const html = await response.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = [
+    ...doc.querySelectorAll('table.torrent_table > tbody > tr.torrent'),
+  ];
+  return rows.map((row) => {
+    const nameAnchor = row.querySelector(
+      'td:nth-child(2) > a[href^="/series.php?id="]'
+    );
+    const name = nameAnchor?.textContent || '';
+
+    const timeSpan = row.querySelector('td:nth-child(4) > span');
+    const timeUploaded = timeSpan ? timeSpan.getAttribute('title') : 0;
+    const uploaded = new Date(timeUploaded);
+
+    return { name, uploaded };
+  });
+}
