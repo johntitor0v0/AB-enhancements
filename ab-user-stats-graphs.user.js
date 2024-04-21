@@ -6,7 +6,7 @@
 // @author      Marv
 // @description Generate graphs for user stats like torrents uploaded.
 // @require     https://unpkg.com/micromodal@0.4.10/dist/micromodal.js
-// @require     https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js
+// @require     https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js
 // @require     https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js
 // @resource    c3CSS https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.css
 // @grant       GM.addStyle
@@ -138,7 +138,8 @@ const ADD_CSS = /* css */ `
               <label for="snatched">Snatched</label>
             </div>
             <button id="generate-button" class="primary-button">Generate</button>
-            <div id="ab-user-stats-graph" style="display: none;"></div>
+            <div id="ab-user-stats-graph-cumulative" style="display: none;"></div>
+            <div id="ab-user-stats-graph-daily" style="display: none;"></div>
           </main>
         </div>
       </div>`
@@ -172,19 +173,48 @@ const ADD_CSS = /* css */ `
         await GM.setValue(cacheKey, stats);
       }
 
+      // Get amount of torrents uploaded per day as well as the total cumulative amount of torrents at that day
+      /**
+       * @type {Map<number, {count: number, total: number}>}
+       */
+      const statsMap = new Map(); // date -> {count, total}
+      let total = 0;
+      stats
+        .sort((a, b) => a.uploaded - b.uploaded)
+        .forEach((stat) => {
+          const date = new Date(stat.uploaded);
+          const day = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          ).getTime();
+          total++;
+          if (statsMap.has(day)) {
+            const curr = statsMap.get(day);
+            statsMap.set(day, { count: curr.count + 1, total });
+          } else {
+            statsMap.set(day, { count: 1, total });
+          }
+        });
+
+      console.log('Stats map:', statsMap);
+
       // c3 time chart
-      const chart = c3.generate({
+      const cumulativeChart = c3.generate({
         bindto: '#ab-user-stats-graph',
         data: {
           x: 'x',
           columns: [
             [
               'x',
-              ...stats.map((stat) =>
-                new Date(stat.uploaded).toLocaleDateString()
+              ...Array.from(statsMap.keys()).map(
+                (time) => new Date(time).toISOString().split('T')[0]
               ),
             ],
-            ['data', ...stats.map((stat) => 1)],
+            [
+              'Torrents Uploaded',
+              ...Array.from(statsMap.values()).map((stat) => stat.total),
+            ],
           ],
         },
         axis: {
@@ -195,7 +225,43 @@ const ADD_CSS = /* css */ `
             },
           },
         },
+        title: {
+          text: 'Cumulative Torrents Uploaded',
+        },
       });
+      document.getElementById('ab-user-stats-graph-cumulative').style.display = 'block';
+      
+      const dailyChart = c3.generate({
+        bindto: '#ab-user-stats-graph-daily',
+        data: {
+          x: 'x',
+          type: 'scatter',
+          columns: [
+            [
+              'x',
+              ...Array.from(statsMap.keys()).map(
+                (time) => new Date(time).toISOString().split('T')[0]
+              ),
+            ],
+            [
+              'Torrents Uploaded',
+              ...Array.from(statsMap.values()).map((stat) => stat.count),
+            ],
+          ],
+        },
+        axis: {
+          x: {
+            type: 'timeseries',
+            tick: {
+              format: '%Y-%m-%d',
+            },
+          },
+        },
+        title: {
+          text: 'Daily Torrents Uploaded',
+        },
+      });
+      document.getElementById('ab-user-stats-graph-daily').style.display = 'block';
     });
 
   // Add generate graph button
