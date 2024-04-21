@@ -115,6 +115,36 @@ const ADD_CSS = /* css */ `
 .primary-button:hover {
   background-color: #333;
 }
+
+#ab-user-stats-graphs-progress-container {
+  width: 100%;
+}
+
+#ab-user-stats-graphs-progress {
+  width: 100%;
+  height: 25px;
+  background-color: #fff;
+  border: 2px solid #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#ab-user-stats-graphs-progress::-webkit-progress-bar {
+  background-color: #fff;
+}
+
+#ab-user-stats-graphs-progress::-webkit-progress-value,
+#ab-user-stats-graphs-progress::-moz-progress-bar {
+  background: #000;
+  border-radius: 15px;
+}
+
+#ab-user-stats-graphs-progress-text {
+  text-align: center;
+  font-size: 1rem;
+  color: #000;
+  margin-top: 10px;
+}
 `;
 
 (() => {
@@ -126,7 +156,6 @@ const ADD_CSS = /* css */ `
   const userid = new URLSearchParams(window.location.search).get('id');
   // Get user name
   const username = document.getElementsByClassName('username')[0].textContent;
-
 
   // Create modal
   document.body.insertAdjacentHTML(
@@ -142,13 +171,14 @@ const ADD_CSS = /* css */ `
               <input type="radio" id="seeding" name="choice" value="Seeding">
               <label for="seeding">Seeding</label>
 
-              <input type="radio" id="leeching" name="choice" value="Leeching">
-              <label for="leeching">Leeching</label>
-
               <input type="radio" id="snatched" name="choice" value="Snatched">
               <label for="snatched">Snatched</label>
             </div>
             <button id="generate-button" class="primary-button">Generate</button>
+            <div id="ab-user-stats-graphs-progress-container" style="display: none;">
+              <progress id="ab-user-stats-graphs-progress" value="0" max="100"></progress>
+              <p id="ab-user-stats-graphs-progress-text"></p>
+            </div>
             <div class="ab-user-stats-graphs" style="display: none;">
               <div id="ab-user-stats-graph-cumulative"></div>
               <div id="ab-user-stats-graph-daily"></div>
@@ -162,9 +192,15 @@ const ADD_CSS = /* css */ `
   document
     .getElementById('generate-button')
     .addEventListener('click', async () => {
-      const selectedInput = document.querySelector('input[name="choice"]:checked');
+      const selectedInput = document.querySelector(
+        'input[name="choice"]:checked'
+      );
       const choice = selectedInput.id;
       const choiceName = selectedInput.value;
+
+      document.getElementById(
+        'ab-user-stats-graphs-progress-container'
+      ).style.display = 'block';
 
       const cacheKey = `${userid}-${choice}-stats`;
       /**
@@ -177,10 +213,23 @@ const ADD_CSS = /* css */ `
         let page = 1;
         while (true) {
           console.log('Fetching page', page);
-          const newStats = await getStatsForPage(userid, page, choice);
+          const { entries: newStats, lastPage } = await getStatsForPage(
+            userid,
+            page,
+            choice
+          );
           if (newStats.length === 0) break;
           console.log('Found', newStats.length, 'torrents');
           stats.push(...newStats);
+
+          // Update progress bar
+          const progress = Math.min((page / lastPage) * 100, 100).toFixed(2);
+          document.getElementById('ab-user-stats-graphs-progress').value =
+            progress;
+          document.getElementById(
+            'ab-user-stats-graphs-progress-text'
+          ).textContent = `Fetching page ${page} of ${lastPage} (${progress}%)`;
+
           page++;
           await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
         }
@@ -188,6 +237,10 @@ const ADD_CSS = /* css */ `
       }
 
       // Done fetching, make graphs
+      // Hide progress
+      document.getElementById(
+        'ab-user-stats-graphs-progress-container'
+      ).style.display = 'none';
 
       document.querySelector('.ab-user-stats-graphs').style.display = 'block';
       document.getElementById(
@@ -318,20 +371,27 @@ async function getStatsForPage(userid, page, type) {
   const response = await fetch(pageURL(userid, page, type));
   const html = await response.text();
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const document = parser.parseFromString(html, 'text/html');
+
+  const pagelinks = document.querySelectorAll('.page-link');
+  const lastPage = parseInt(pagelinks[pagelinks.length - 1]?.textContent || 0);
+
   const rows = [
-    ...doc.querySelectorAll('table.torrent_table > tbody > tr.torrent'),
+    ...document.querySelectorAll('table.torrent_table > tbody > tr.torrent'),
   ];
-  return rows.map((row) => {
-    const nameAnchor = row.querySelector(
-      'td:nth-child(2) > a[href^="/series.php?id="]'
-    );
-    const name = nameAnchor?.textContent || '';
+  return {
+    entries: rows.map((row) => {
+      const nameAnchor = row.querySelector(
+        'td:nth-child(2) > a[href^="/series.php?id="]'
+      );
+      const name = nameAnchor?.textContent || '';
 
-    const timeSpan = row.querySelector('td:nth-child(4) > span');
-    const datestring = timeSpan ? timeSpan.getAttribute('title') : 0;
-    const dateval = new Date(datestring).getTime();
+      const timeSpan = row.querySelector('td:nth-child(4) > span');
+      const datestring = timeSpan ? timeSpan.getAttribute('title') : 0;
+      const dateval = new Date(datestring).getTime();
 
-    return { name, dateval };
-  });
+      return { name, dateval };
+    }),
+    lastPage,
+  };
 }
