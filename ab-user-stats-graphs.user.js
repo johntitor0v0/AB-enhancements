@@ -11,6 +11,14 @@
 // ==/UserScript==
 
 const ADD_CSS = /* css */ `
+.micromodal-slide {
+  display: none;
+}
+
+.micromodal-slide.is-open {
+  display: block;
+}
+
 .modal__overlay {
   position: fixed;
   top: 0;
@@ -26,7 +34,12 @@ const ADD_CSS = /* css */ `
 
 .modal__container {
   background-color: #fff;
-  padding: 20px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
   border-radius: 10px;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
   width: 80%;
@@ -35,7 +48,15 @@ const ADD_CSS = /* css */ `
   z-index: 100;
 }
 
+.modal__container h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+
+}
+
 .choice-chips {
+  width: 100%;
   display: flex;
   justify-content: space-around;
   padding: 10px;
@@ -47,11 +68,15 @@ const ADD_CSS = /* css */ `
 
 .choice-chips label {
   padding: 10px 20px;
-  font-size: 16px;
+  font-size: 1.2rem;
   border: 2px solid #000;
   border-radius: 25px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+}
+
+.choice-chips label:hover {
+  background-color: #f0f0f0;
 }
 
 .choice-chips input[type="radio"]:checked + label {
@@ -64,7 +89,7 @@ const ADD_CSS = /* css */ `
   width: 100%;
   padding: 15px;
   margin-top: 20px;
-  font-size: 18px;
+  font-size: 1.2rem;
   text-align: center;
   color: #fff;
   background-color: #000;
@@ -89,32 +114,32 @@ const ADD_CSS = /* css */ `
     'beforeend',
     /* html */ `<div id="ab-user-stats-graphs-modal" class="modal micromodal-slide" aria-hidden="true">
         <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-          <div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
-            <header class="modal__header">
-              <h2 class="modal__title" id="modal-1-title">User Stats Graphs</h2>
-            </header>
-            <main class="modal__content" id="modal-1-content">
-              <div id="ab-user-stats-graphs-modal-content">
-                <div class="choice-chips">
-                  <input type="radio" id="uploaded" name="choice" value="Uploaded">
-                  <label for="uploaded">Uploaded</label>
+          <main id="ab-user-stats-graphs-modal-content" class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+            <h2>Generate Graph</h2>
+            <div class="choice-chips">
+              <input type="radio" id="uploaded" name="choice" value="Uploaded" checked>
+              <label for="uploaded">Uploaded</label>
 
-                  <input type="radio" id="seeding" name="choice" value="Seeding">
-                  <label for="seeding">Seeding</label>
+              <input type="radio" id="seeding" name="choice" value="Seeding">
+              <label for="seeding">Seeding</label>
 
-                  <input type="radio" id="leeching" name="choice" value="Leeching">
-                  <label for="leeching">Leeching</label>
+              <input type="radio" id="leeching" name="choice" value="Leeching">
+              <label for="leeching">Leeching</label>
 
-                  <input type="radio" id="snatched" name="choice" value="Snatched">
-                  <label for="snatched">Snatched</label>
-                </div>
-                <button id="generate-button" class="primary-button">Generate</button>
-              </div>
-            </main>
-          </div>
+              <input type="radio" id="snatched" name="choice" value="Snatched">
+              <label for="snatched">Snatched</label>
+            </div>
+            <button id="generate-button" class="primary-button">Generate</button>
+          </main>
         </div>
       </div>`
   );
+
+  // Generate graph
+  document.getElementById('generate-button').addEventListener('click', () => {
+    const choice = document.querySelector('input[name="choice"]:checked').value.toLowerCase();
+
+  });
 
   // Add generate graph button
   [...document.querySelectorAll('h3')]
