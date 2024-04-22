@@ -380,7 +380,7 @@ const ADD_CSS = /* css */ `
       const pieChart = c3.generate({
         bindto: '#ab-user-stats-graph-pie',
         size: {
-          height: 600,
+          height: 400,
         },
         data: {
           columns: Array.from(typeCount.entries()),
