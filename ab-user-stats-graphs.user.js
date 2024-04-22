@@ -242,7 +242,7 @@ const ADD_CSS = /* css */ `
         stats = { ...stats, ...newStats };
 
         // Stop if any torrent is older than the latest date
-        if (Object.values(newStats).some((date) => date < latestDate)) break;
+        if (Object.values(newStats).some(({date}) => date < latestDate)) break;
 
         // Stop if reached last page
         if (page >= lastPage) break;
