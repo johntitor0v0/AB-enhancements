@@ -2,7 +2,7 @@
 // @name        AB User Stats Graphs
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/user.php*
-// @version     1.1
+// @version     1.1.1
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Generate graphs for user stats like torrents uploaded.
@@ -388,7 +388,8 @@ const ADD_CSS = /* css */ `
         },
         tooltip: {
           format: {
-            value: (value, ratio, id) => `${value} (${(ratio * 100).toFixed(2)}%)`,
+            value: (value, ratio, id) =>
+              `${value} (${(ratio * 100).toFixed(2)}%)`,
           },
         },
         title: {
@@ -454,10 +455,17 @@ async function getStatsForPage(userid, page, type) {
       );
       const name = isMusic ? torrentAnchor.textContent : nameAnchor.textContent;
 
-      const datestring = row
-        .querySelector('td:nth-child(4) > span')
-        .getAttribute('title');
-      const dateval = new Date(datestring).getTime();
+      const dateElem = row.querySelector('td:nth-child(4) > span');
+      // Remove time zone last 3 letters if present
+      const cleanDate = (dateString) => dateString.replace(/ [A-Z]{3}$/, '');
+      // If absolute date is enabled, the date is in the text content, otherwise in the title
+      const dateval =
+        new Date(cleanDate(dateElem.getAttribute('title'))).getTime() ||
+        new Date(cleanDate(dateElem.textContent)).getTime();
+
+      if (!dateVal) {
+        throw new Error('Could not parse date', dateElem.innerHTML);
+      }
 
       map[torrentID] = {
         name,
