@@ -2,7 +2,7 @@
 // @name        AB User Stats Graphs
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/user.php*
-// @version     1.0.1
+// @version     1.1
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Generate graphs for user stats like torrents uploaded.
@@ -17,6 +17,8 @@
 // ==/UserScript==
 
 const DELAY_MS = 5055;
+
+const cacheKey = (userid, choice) => `v0-${userid}-${choice}-stats`;
 
 const ADD_CSS = /* css */ `
 .micromodal-slide {
@@ -54,6 +56,12 @@ const ADD_CSS = /* css */ `
   min-width: 800px;
   margin: 1.75rem auto;
   z-index: 100;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.modal__container::-webkit-scrollbar {
+  display: none;
 }
 
 .modal__container h2 {
@@ -156,7 +164,9 @@ const ADD_CSS = /* css */ `
 
   const userid = new URLSearchParams(window.location.search).get('id');
   // Get user name
-  const username = document.querySelector('#content a[href^="/user/profile"]')?.textContent;
+  const username = document.querySelector(
+    '#content a[href^="/user/profile"]'
+  )?.textContent;
 
   // Create modal
   document.body.insertAdjacentHTML(
@@ -180,6 +190,7 @@ const ADD_CSS = /* css */ `
             <div class="ab-user-stats-graphs" style="display: none;">
               <div id="ab-user-stats-graph-cumulative"></div>
               <div id="ab-user-stats-graph-daily"></div>
+              <div id="ab-user-stats-graph-pie"></div>
             </div>
           </main>
         </div>
@@ -200,14 +211,17 @@ const ADD_CSS = /* css */ `
         'ab-user-stats-graphs-progress-container'
       ).style.display = 'block';
 
-      const cacheKey = `${userid}-${choice}-stats`;
       /**
        * @type {Object<string, number>}
        */
-      let stats = await GM.getValue(cacheKey, {});
+      let stats = await GM.getValue(cacheKey(userid, choice), {});
       console.log('Cached stats:', stats);
+
       // Find latest torrent date
-      const latestDate = Math.max(...Object.values(stats), 0);
+      const latestDate = Object.values(stats).reduce(
+        (latest, { date }) => Math.max(latest, date),
+        0
+      );
       console.log('Latest date scraped:', new Date(latestDate));
 
       // Iterate upwards until date past latest date or no new torrents
@@ -244,7 +258,9 @@ const ADD_CSS = /* css */ `
         page++;
         await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
       }
-      await GM.setValue(cacheKey, stats);
+      await GM.setValue(cacheKey(userid, choice), stats);
+
+      console.log('Final stats:', stats);
 
       // Done fetching, make graphs
       // Hide progress
@@ -261,12 +277,12 @@ const ADD_CSS = /* css */ `
       /**
        * @type {Map<number, {count: number, total: number}>}
        */
-      const statsMap = new Map(); // date -> {count, total}
+      const torrentsDateMap = new Map(); // date -> {count, total}
       let total = 0;
 
       Object.entries(stats)
-        .sort(([, aVal], [, bVal]) => aVal - bVal)
-        .forEach(([, dateVal]) => {
+        .sort(([, { date: aVal }], [, { date: bVal }]) => aVal - bVal)
+        .forEach(([, { date: dateVal }]) => {
           const date = new Date(dateVal);
           const day = new Date(
             date.getFullYear(),
@@ -274,15 +290,15 @@ const ADD_CSS = /* css */ `
             date.getDate()
           ).getTime();
           total++;
-          if (statsMap.has(day)) {
-            const curr = statsMap.get(day);
-            statsMap.set(day, { count: curr.count + 1, total });
+          if (torrentsDateMap.has(day)) {
+            const curr = torrentsDateMap.get(day);
+            torrentsDateMap.set(day, { count: curr.count + 1, total });
           } else {
-            statsMap.set(day, { count: 1, total });
+            torrentsDateMap.set(day, { count: 1, total });
           }
         });
 
-      console.log('Stats map:', statsMap);
+      console.log('Stats map:', torrentsDateMap);
 
       // c3 time chart
       const cumulativeChart = c3.generate({
@@ -293,13 +309,13 @@ const ADD_CSS = /* css */ `
           columns: [
             [
               'x',
-              ...Array.from(statsMap.keys()).map(
+              ...Array.from(torrentsDateMap.keys()).map(
                 (time) => new Date(time).toISOString().split('T')[0]
               ),
             ],
             [
               `Torrents ${choiceName}`,
-              ...Array.from(statsMap.values()).map((stat) => stat.total),
+              ...Array.from(torrentsDateMap.values()).map((stat) => stat.total),
             ],
           ],
         },
@@ -313,7 +329,7 @@ const ADD_CSS = /* css */ `
           },
         },
         title: {
-          text: `Cumulative Torrents ${choiceName}`,
+          text: `Cumulative Torrents ${choiceName} by ${username}`,
         },
       });
       ('block');
@@ -326,13 +342,13 @@ const ADD_CSS = /* css */ `
           columns: [
             [
               'x',
-              ...Array.from(statsMap.keys()).map(
+              ...Array.from(torrentsDateMap.keys()).map(
                 (time) => new Date(time).toISOString().split('T')[0]
               ),
             ],
             [
               `Daily Torrents ${choiceName}`,
-              ...Array.from(statsMap.values()).map((stat) => stat.count),
+              ...Array.from(torrentsDateMap.values()).map((stat) => stat.count),
             ],
           ],
         },
@@ -346,7 +362,31 @@ const ADD_CSS = /* css */ `
           },
         },
         title: {
-          text: `Daily Torrents ${choiceName}`,
+          text: `Daily Torrents ${choiceName} by ${username}`,
+        },
+      });
+
+      // Graph pie chart based on amount of each type
+      const typeCount = Object.values(stats).reduce((map, { type }) => {
+        if (map.has(type)) {
+          map.set(type, map.get(type) + 1);
+        } else {
+          map.set(type, 1);
+        }
+        return map;
+      }, new Map());
+      console.log('Type count:', typeCount);
+      const pieChart = c3.generate({
+        bindto: '#ab-user-stats-graph-pie',
+        size: {
+          height: 600,
+        },
+        data: {
+          columns: Array.from(typeCount.entries()),
+          type: 'pie',
+        },
+        title: {
+          text: `${username}'s Torrents ${choiceName} by Type`,
         },
       });
     });
@@ -393,24 +433,31 @@ async function getStatsForPage(userid, page, type) {
   ];
   return {
     /**
-     * @type {Object<string, number>}
+     * @type {Object<string, {name: string, type: string, date: number}>}
      */
     entries: rows.reduce((map, row) => {
-      // const nameAnchor = row.querySelector(
-      //   'td:nth-child(2) > a[href^="/series.php?id="]'
-      // );
-      // const name = nameAnchor?.textContent || '';
-      // <a href="torrents.php?id=91109&amp;torrentid=1112035" title="View Torrent">Light Novel</a>
       const torrentAnchor = row.querySelector('a[title="View Torrent"]');
       const torrentID = torrentAnchor
-        ? torrentAnchor.getAttribute('href').split('torrentid=')[1]
-        : '';
+        .getAttribute('href')
+        .split('torrentid=')[1];
+      const isMusic = torrentAnchor.href.includes('torrents2.php');
+      const torrentType = isMusic ? 'Music' : torrentAnchor.textContent;
 
-      const timeSpan = row.querySelector('td:nth-child(4) > span');
-      const datestring = timeSpan ? timeSpan.getAttribute('title') : 0;
+      const nameAnchor = row.querySelector(
+        'td:nth-child(2) > a[href^="/series.php?id="]'
+      );
+      const name = isMusic ? torrentAnchor.textContent : nameAnchor.textContent;
+
+      const datestring = row
+        .querySelector('td:nth-child(4) > span')
+        .getAttribute('title');
       const dateval = new Date(datestring).getTime();
 
-      map[torrentID] = dateval;
+      map[torrentID] = {
+        name,
+        type: torrentType,
+        date: dateval,
+      };
       return map;
     }, {}),
     lastPage,
