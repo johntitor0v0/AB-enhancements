@@ -2,7 +2,7 @@
 // @name        AB User Stats Graphs
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/user.php*
-// @version     1.1.1
+// @version     1.1.2
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Generate graphs for user stats like torrents uploaded.
@@ -459,7 +459,7 @@ async function getStatsForPage(userid, page, type) {
       // Remove time zone last 3 letters if present
       const cleanDate = (dateString) => dateString.replace(/ [A-Z]{3}$/, '');
       // If absolute date is enabled, the date is in the text content, otherwise in the title
-      const dateval =
+      const dateVal =
         new Date(cleanDate(dateElem.getAttribute('title'))).getTime() ||
         new Date(cleanDate(dateElem.textContent)).getTime();
 
@@ -470,7 +470,7 @@ async function getStatsForPage(userid, page, type) {
       map[torrentID] = {
         name,
         type: torrentType,
-        date: dateval,
+        date: dateVal,
       };
       return map;
     }, {}),
