@@ -242,7 +242,8 @@ const ADD_CSS = /* css */ `
         stats = { ...stats, ...newStats };
 
         // Stop if any torrent is older than the latest date
-        if (Object.values(newStats).some(({date}) => date < latestDate)) break;
+        if (Object.values(newStats).some(({ date }) => date < latestDate))
+          break;
 
         // Stop if reached last page
         if (page >= lastPage) break;
@@ -384,6 +385,11 @@ const ADD_CSS = /* css */ `
         data: {
           columns: Array.from(typeCount.entries()),
           type: 'pie',
+        },
+        tooltip: {
+          format: {
+            value: (value, ratio, id) => `${value} (${(ratio * 100).toFixed(2)}%)`,
+          },
         },
         title: {
           text: `${username}'s Torrents ${choiceName} by Type`,
