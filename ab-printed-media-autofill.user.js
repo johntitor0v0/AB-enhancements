@@ -363,7 +363,11 @@ async function autofillFromBookwalkerURL(
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
-  submitInput(tab, { jpTitle: title, year: releaseYear, coverURL, summary });
+  submitInput(
+    tab,
+    { jpTitle: title, year: releaseYear, coverURL, summary },
+    { cover: true }
+  );
 
   autofillDiv.innerHTML = `Autofilled info about <a href="${volumeURL}">${title}</a>
   <br>Reading: ${reading}
@@ -457,7 +461,11 @@ async function autoFillAnilistFromID(tab, anilistID, autofillDiv) {
 
   autofillDiv.innerHTML = `Got info about ${title}!`;
 
-  submitInput(tab, { title, jpTitle, year, tags, coverURL, summary });
+  submitInput(
+    tab,
+    { title, jpTitle, year, tags, coverURL, summary },
+    { summary: true }
+  );
 
   autofillDiv.innerHTML = `Autofilled info about <a href="https://anilist.co/manga/${anilistID}">${title}</a>
 ${title}!`;
@@ -468,17 +476,16 @@ ${title}!`;
 /**
  * Submits the input data to the form
  * @param {HTMLElement} tab - The tab to autofill
- * @param {Object} inputData - The data to insert into the form
- * @returns {void}
- * @property {string} inputData.title - The Romaji title of the series
- * @property {string} inputData.jpTitle - The Japanese title of the series
- * @property {string} inputData.year - The year the series was released
- * @property {string[]} inputData.tags - The tags of the series
- * @property {string} inputData.coverURL - The URL of the cover image
- * @property {string} inputData.summary - The summary of the series
+ * @param {{title: string, jpTitle: string, year: string, tags: string[], coverURL: string, summary: string}} inputData - The data to input
+ * @param {{cover?: boolean, summary?: boolean}} [overrides] - The fields to override
  */
-function submitInput(tab, inputData) {
+function submitInput(tab, inputData, overrides = {}) {
   console.log('inputting', inputData);
+  const { cover: overrideCover, summary: overrideSummary } = {
+    ...{ cover: false, summary: false },
+    ...overrides,
+  };
+  console.log('overrides', { cover: overrideCover, summary: overrideSummary });
 
   const inputTagString = inputData.tags
     ?.join(',')
@@ -521,8 +528,8 @@ function submitInput(tab, inputData) {
   const summaryInput = summaryDd.querySelector('textarea');
 
   // Insert the info into the input fields, check if the info exists and if the field is empty
-  const insertInfo = (input, info) => {
-    if (info && !input.value) {
+  const insertInfo = (input, info, override = false) => {
+    if (info && (!input.value || override)) {
       input.value = info;
     }
   };
@@ -530,8 +537,8 @@ function submitInput(tab, inputData) {
   insertInfo(jpSeriesInput, inputData.jpTitle);
   insertInfo(yearInput, inputData.year);
   insertInfo(tagsInput, inputTagString);
-  insertInfo(coverInput, inputData.coverURL);
-  insertInfo(summaryInput, inputData.summary);
+  insertInfo(coverInput, inputData.coverURL, overrideCover);
+  insertInfo(summaryInput, inputData.summary, overrideSummary);
 }
 
 /**
