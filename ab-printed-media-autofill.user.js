@@ -2,7 +2,7 @@
 // @name        AB Autofill Printed Media Details
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.4.11
+// @version     1.4.12
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Autofills printed media details from Bookwalker
@@ -323,7 +323,7 @@ async function getVolumeURLAndTitle(formInput) {
   let title = '';
 
   // Check if the URL is a valid Bookwalker URL like https://bookwalker.jp/de7c3bf828-1b91-446b-a54a-7f456afa65a0/
-  if (formInput.match(/^https?:\/\/bookwalker\.jp\/[a-z0-9\-]{38}\/?$/)) {
+  if (formInput.match(/^https?:\/\/(r18\.)?bookwalker\.jp\/[a-z0-9\-]{38}\/?$/)) {
     volumeURL = formInput;
   }
   // Else check if matches series like https://bookwalker.jp/series/225244/list/
