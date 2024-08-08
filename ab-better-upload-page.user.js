@@ -2,7 +2,7 @@
 // @name        AB Better Upload Page
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.1.5
+// @version     1.1.6
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Improves styling and functionality of the AB upload page
@@ -268,10 +268,10 @@ function convertSelectsToInputChips() {
       chip.addEventListener('click', () => {
         chip.classList.toggle('selected');
         const chipSelected = chip.classList.contains('selected');
-        option.selected = chipSelected;
-        select.onchange();
         toggleInputValue(input, option.value, chipSelected);
         if (!tagSelector) {
+          option.selected = chipSelected;
+          select.onchange();
           const otherChips = [...chipContainer.querySelectorAll('.chip')];
           for (const otherChip of otherChips) {
             if (otherChip !== chip) {
@@ -296,17 +296,19 @@ function toggleInputValue(input, value, selected) {
   if (!input) {
     return;
   }
-  const values = input.value
+  let values = input.value
     .split(',')
-    .filter(Boolean)
-    .map((v) => v.trim());
+    .map((v) => v.trim())
+    .filter((v) => !EXCLUDE_OPTIONS.includes(v))
+    .filter(Boolean);
+
   if (values.includes(value) === selected) {
     return;
   }
   if (selected) {
     values.push(value);
   } else {
-    values.splice(values.indexOf(value), 1);
+    values = values.filter((v) => v !== value);
   }
   input.value = values.join(', ');
 }
