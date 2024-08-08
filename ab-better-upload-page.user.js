@@ -2,7 +2,7 @@
 // @name        AB Better Upload Page
 // @namespace   https://github.com/MarvNC
 // @match       https://animebytes.tv/upload.php
-// @version     1.1.2
+// @version     1.1.3
 // @author      Marv
 // @icon        https://avatars.githubusercontent.com/u/17340496
 // @description Improves styling and functionality of the AB upload page
@@ -243,6 +243,8 @@ function convertSelectsToInputChips() {
   for (const select of selects) {
     select.style.display = 'none';
 
+    const input = select.nextElementSibling;
+
     const parent = select.parentElement;
     const chipContainer = document.createElement('div');
     chipContainer.className = 'chip-container';
@@ -258,19 +260,30 @@ function convertSelectsToInputChips() {
       chip.textContent = option.textContent;
 
       chip.addEventListener('click', () => {
-        option.selected = !option.selected;
-        select.onchange();
         chip.classList.toggle('selected');
-        const otherChips = [...chipContainer.querySelectorAll('.chip')];
-        for (const otherChip of otherChips) {
-          if (otherChip !== chip) {
-            otherChip.classList.remove('selected');
-          }
-        }
+        toggleInputValue(input, option.value);
       });
 
       chipContainer.appendChild(chip);
     }
+  }
+}
+
+/**
+ *
+ * @param {HTMLInputElement} input
+ * @param {string} value
+ */
+function toggleInputValue(input, value) {
+  const values = input.value
+    .split(',')
+    .filter(Boolean)
+    .map((v) => v.trim());
+  console.log(values);
+  if (values.includes(value)) {
+    input.value = values.filter((v) => v !== value).join(',');
+  } else {
+    input.value = [...values, value].join(', ');
   }
 }
 
