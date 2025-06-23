@@ -18,6 +18,8 @@ Alternatively, you can enter an Anilist manga/LN link or type in a title to sear
 
 ## AB Torrent Releases Filtering
 
+The [AB Mediainfo Improvements](https://animebytes.tv/forums.php?action=viewthread&threadid=27557) userscript is needed for this to work.
+
 ### Features
  - Filters out torrents based on the source, container, codec, resolution, audio codec, audio channels, and whether it has Japanese subtitles.
  - Alt + click to select only one option.
